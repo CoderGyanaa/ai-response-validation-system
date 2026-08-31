@@ -32,6 +32,9 @@ Agent Orchestrator (app/agents/orchestrator.py)
   └── Completeness Judge Agent   → Gemini
   ↓
 Verdict Agent → EvaluationResult (JSON)
+
+<img width="1536" height="1024" alt="milestone 1" src="https://github.com/user-attachments/assets/2ec5d6e2-6d0f-4844-b4a5-87ff2f8e1941" />
+
 ```
 
 ## Agent Responsibilities
