@@ -33,9 +33,8 @@ Agent Orchestrator (app/agents/orchestrator.py)
   ↓
 Verdict Agent → EvaluationResult (JSON)
 
-<img width="1536" height="1024" alt="milestone 1" src="https://github.com/user-attachments/assets/2ec5d6e2-6d0f-4844-b4a5-87ff2f8e1941" />
-
 ```
+<img width="1536" height="1024" alt="milestone 1" src="https://github.com/user-attachments/assets/87ee7837-422d-4566-9794-377fe95fa1ee" />
 
 ## Agent Responsibilities
 | Agent | Purpose | Status |
