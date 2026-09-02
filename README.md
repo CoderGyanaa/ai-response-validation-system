@@ -55,6 +55,31 @@ Each judge agent prompts the LLM for a structured JSON verdict, parses it robust
 - **Datasets**: Hugging Face `datasets` (TruthfulQA, SQuAD)
 - **Testing**: pytest, with mocked-LLM unit tests for agent logic
 
+## 🎬 Demo
+
+<img width="1917" height="777" alt="image" src="https://github.com/user-attachments/assets/40363f17-e284-4892-bb25-038380119af5" />
+<img width="1916" height="627" alt="image" src="https://github.com/user-attachments/assets/c4867d3f-98d6-4ec6-9a08-bf5f8188b9ee" />
+
+
+### Interactive API Docs
+Once the server is running, explore and test the endpoints live via Swagger UI:
+- **Swagger UI:** `http://127.0.0.1:8000/docs`
+- **ReDoc:** `http://127.0.0.1:8000/redoc`
+
+### Quick Evaluation Walkthrough
+
+1. Send an evaluation request using `curl` or Postman:
+
+```bash
+curl -X POST [http://127.0.0.1:8000/evaluate](http://127.0.0.1:8000/evaluate) \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "What is the capital of France?",
+    "ai_response": "The capital of France is Berlin, and it has a population of 50 million.",
+    "reference_answer": "The capital of France is Paris.",
+    "source_document": "France is a country in Europe. Its capital city is Paris."
+  }'
+
 ## Dataset Sources
 See [`data/README.md`](data/README.md) — datasets are not committed, only reproduced via `scripts/ingest_knowledge_base.py`. Currently ingests 817 TruthfulQA records + 2,000 SQuAD records (~5,562 chunks) into the local vector store.
 
