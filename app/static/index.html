@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Response Validation System</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 20px;
+    background: #f7f8fa;
+    color: #1a1a1a;
+  }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .subtitle { color: #666; margin-bottom: 24px; font-size: 14px; }
+  .card {
+    background: white;
+    border: 1px solid #e2e4e8;
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; }
+  textarea, input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #d5d8dd;
+    border-radius: 6px;
+    font-size: 14px;
+    margin-bottom: 16px;
+    font-family: inherit;
+  }
+  textarea { resize: vertical; min-height: 60px; }
+  button {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:hover { background: #1d4ed8; }
+  button:disabled { background: #9ca3af; cursor: not-allowed; }
+  .agent-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .agent-box {
+    border: 1px solid #e2e4e8;
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .agent-name { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #555; }
+  .agent-score { font-size: 28px; font-weight: 800; margin: 6px 0; }
+  .agent-reason { font-size: 13px; color: #555; line-height: 1.4; }
+  .score-high { color: #16a34a; }
+  .score-mid { color: #d97706; }
+  .score-low { color: #dc2626; }
+  .verdict-banner {
+    text-align: center;
+    padding: 20px;
+    border-radius: 8px;
+    font-size: 24px;
+    font-weight: 800;
+    margin-bottom: 16px;
+  }
+  .verdict-pass { background: #dcfce7; color: #166534; }
+  .verdict-partial { background: #fef3c7; color: #92400e; }
+  .verdict-fail { background: #fee2e2; color: #991b1b; }
+  .claims-box {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-top: 16px;
+  }
+  .claims-box h4 { margin: 0 0 8px 0; color: #991b1b; font-size: 13px; }
+  .claims-box ul { margin: 0; padding-left: 20px; font-size: 13px; }
+  .suggestions-box {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-top: 16px;
+  }
+  .suggestions-box h4 { margin: 0 0 8px 0; color: #1e40af; font-size: 13px; }
+  .suggestions-box ul { margin: 0; padding-left: 20px; font-size: 13px; }
+  .error { color: #dc2626; padding: 12px; background: #fee2e2; border-radius: 6px; margin-top: 12px; font-size: 14px; }
+  .loading { text-align: center; padding: 30px; color: #666; }
+  .overall-score { font-size: 15px; margin-bottom: 12px; color: #444; }
+  #resultCard { display: none; }
+</style>
+</head>
+<body>
+
+<h1>AI Response Validation System</h1>
+<div class="subtitle">Hallucination Detection Assistance — Infosys Springboard Internship, Milestone 1</div>
+
+<div class="card">
+  <label for="question">Question *</label>
+  <textarea id="question" placeholder="e.g. What is the capital of France?"></textarea>
+
+  <label for="ai_response">AI-Generated Response *</label>
+  <textarea id="ai_response" placeholder="e.g. The capital of France is Berlin, and it has a population of 50 million."></textarea>
+
+  <label for="reference_answer">Reference Answer (optional)</label>
+  <textarea id="reference_answer" placeholder="e.g. The capital of France is Paris."></textarea>
+
+  <label for="source_document">Source Document (optional)</label>
+  <textarea id="source_document" placeholder="e.g. France is a country in Europe. Its capital city is Paris."></textarea>
+
+  <button id="submitBtn" onclick="runEvaluation()">Evaluate Response</button>
+</div>
+
+<div id="loadingCard" class="card loading" style="display:none;">
+  Running evaluation across 4 judge agents... this can take 10–30 seconds.
+</div>
+
+<div id="errorCard" class="error" style="display:none;"></div>
+
+<div id="resultCard" class="card">
+  <div id="verdictBanner" class="verdict-banner"></div>
+  <div id="overallScore" class="overall-score"></div>
+
+  <div class="agent-grid" id="agentGrid"></div>
+
+  <div id="claimsSection"></div>
+  <div id="suggestionsSection"></div>
+</div>
+
+<script>
+const API_BASE = window.location.origin;
+
+function scoreClass(score) {
+  if (score >= 0.8) return 'score-high';
+  if (score >= 0.5) return 'score-mid';
+  return 'score-low';
+}
+
+function verdictClass(verdict) {
+  if (verdict === 'PASS') return 'verdict-pass';
+  if (verdict === 'PARTIAL') return 'verdict-partial';
+  return 'verdict-fail';
+}
+
+async function runEvaluation() {
+  const question = document.getElementById('question').value.trim();
+  const ai_response = document.getElementById('ai_response').value.trim();
+  const reference_answer = document.getElementById('reference_answer').value.trim();
+  const source_document = document.getElementById('source_document').value.trim();
+
+  const errorCard = document.getElementById('errorCard');
+  const resultCard = document.getElementById('resultCard');
+  const loadingCard = document.getElementById('loadingCard');
+  const submitBtn = document.getElementById('submitBtn');
+
+  errorCard.style.display = 'none';
+  resultCard.style.display = 'none';
+
+  if (!question || !ai_response) {
+    errorCard.textContent = 'Question and AI Response are required.';
+    errorCard.style.display = 'block';
+    return;
+  }
+
+  const payload = { question, ai_response };
+  if (reference_answer) payload.reference_answer = reference_answer;
+  if (source_document) payload.source_document = source_document;
+
+  loadingCard.style.display = 'block';
+  submitBtn.disabled = true;
+
+  try {
+    const res = await fetch(`${API_BASE}/evaluate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail ? JSON.stringify(err.detail) : `Request failed (${res.status})`);
+    }
+
+    const data = await res.json();
+    renderResult(data);
+  } catch (e) {
+    errorCard.textContent = 'Error: ' + e.message;
+    errorCard.style.display = 'block';
+  } finally {
+    loadingCard.style.display = 'none';
+    submitBtn.disabled = false;
+  }
+}
+
+function renderResult(data) {
+  const banner = document.getElementById('verdictBanner');
+  banner.textContent = 'Verdict: ' + data.verdict;
+  banner.className = 'verdict-banner ' + verdictClass(data.verdict);
+
+  document.getElementById('overallScore').textContent =
+    'Overall Score: ' + data.overall_score.toFixed(2) + ' / 1.00';
+
+  const agents = [
+    { key: 'relevance', label: 'Relevance' },
+    { key: 'accuracy', label: 'Accuracy' },
+    { key: 'hallucination', label: 'Hallucination' },
+    { key: 'completeness', label: 'Completeness' }
+  ];
+
+  const grid = document.getElementById('agentGrid');
+  grid.innerHTML = agents.map(a => {
+    const r = data[a.key];
+    return `
+      <div class="agent-box">
+        <div class="agent-name">${a.label}</div>
+        <div class="agent-score ${scoreClass(r.score)}">${r.score.toFixed(2)}</div>
+        <div class="agent-reason">${r.reason || ''}</div>
+      </div>
+    `;
+  }).join('');
+
+  const claimsSection = document.getElementById('claimsSection');
+  const claims = data.hallucination.unsupported_claims || [];
+  if (claims.length > 0) {
+    claimsSection.innerHTML = `
+      <div class="claims-box">
+        <h4>Unsupported Claims Detected</h4>
+        <ul>${claims.map(c => `<li>${c}</li>`).join('')}</ul>
+      </div>
+    `;
+  } else {
+    claimsSection.innerHTML = '';
+  }
+
+  const suggestionsSection = document.getElementById('suggestionsSection');
+  const suggestions = data.improvement_suggestions || [];
+  if (suggestions.length > 0) {
+    suggestionsSection.innerHTML = `
+      <div class="suggestions-box">
+        <h4>Improvement Suggestions</h4>
+        <ul>${suggestions.map(s => `<li>${s}</li>`).join('')}</ul>
+      </div>
+    `;
+  } else {
+    suggestionsSection.innerHTML = '';
+  }
+
+  document.getElementById('resultCard').style.display = 'block';
+}
+</script>
+
+</body>
+</html>
