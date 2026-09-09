@@ -2,151 +2,405 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>AI Response Validation System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Response Validation — Case File</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  :root {
+    --bg: #12151B;
+    --panel: #181C23;
+    --field: #1F242C;
+    --line: #2A2F39;
+    --paper: #EDEBE4;
+    --muted: #8890A0;
+    --verified: #5FD3A5;
+    --flagged: #E8604C;
+    --partial: #E8B84C;
+  }
+
   * { box-sizing: border-box; }
+
   body {
-    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
-    max-width: 900px;
-    margin: 40px auto;
-    padding: 0 20px;
-    background: #f7f8fa;
-    color: #1a1a1a;
+    margin: 0;
+    background: var(--bg);
+    color: var(--paper);
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.55;
   }
-  h1 { font-size: 22px; margin-bottom: 4px; }
-  .subtitle { color: #666; margin-bottom: 24px; font-size: 14px; }
-  .card {
-    background: white;
-    border: 1px solid #e2e4e8;
-    border-radius: 10px;
-    padding: 24px;
-    margin-bottom: 20px;
+
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
   }
-  label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; }
-  textarea, input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #d5d8dd;
-    border-radius: 6px;
+
+  /* --- Masthead --- */
+  .masthead {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 20px;
+    margin-bottom: 36px;
+  }
+  .masthead h1 {
+    font-family: "Fraunces", serif;
+    font-weight: 500;
+    font-size: 30px;
+    letter-spacing: -0.01em;
+    margin: 0 0 4px 0;
+  }
+  .masthead .sub {
+    color: var(--muted);
     font-size: 14px;
-    margin-bottom: 16px;
-    font-family: inherit;
   }
-  textarea { resize: vertical; min-height: 60px; }
-  button {
-    background: #2563eb;
-    color: white;
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    white-space: nowrap;
+    padding-bottom: 4px;
+  }
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  .status.busy .status-dot {
+    background: var(--partial);
+    animation: pulse 1.1s ease-in-out infinite;
+  }
+  .status.done .status-dot { background: var(--verified); }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .status.busy .status-dot { animation: none; }
+  }
+
+  /* --- Form --- */
+  .field-group { margin-bottom: 22px; }
+  .field-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .field-label .req { color: var(--flagged); }
+  textarea {
+    width: 100%;
+    background: var(--field);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    color: var(--paper);
+    font-family: inherit;
+    font-size: 15px;
+    padding: 12px 14px;
+    min-height: 68px;
+    resize: vertical;
+  }
+  textarea:focus {
+    outline: 2px solid var(--verified);
+    outline-offset: 1px;
+    border-color: transparent;
+  }
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  @media (max-width: 560px) {
+    .two-col { grid-template-columns: 1fr; }
+  }
+
+  button.run {
+    background: var(--paper);
+    color: var(--bg);
     border: none;
-    padding: 12px 24px;
-    border-radius: 6px;
+    border-radius: 3px;
+    padding: 13px 26px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
+    font-family: inherit;
   }
-  button:hover { background: #1d4ed8; }
-  button:disabled { background: #9ca3af; cursor: not-allowed; }
-  .agent-grid {
+  button.run:hover { background: #fff; }
+  button.run:disabled { background: var(--muted); cursor: not-allowed; }
+  button.run:focus-visible { outline: 2px solid var(--verified); outline-offset: 2px; }
+
+  .error-box {
+    display: none;
+    border: 1px solid var(--flagged);
+    color: var(--flagged);
+    padding: 12px 16px;
+    border-radius: 3px;
+    font-size: 14px;
+    margin-top: 16px;
+  }
+
+  /* --- Results --- */
+  #results {
+    display: none;
+    margin-top: 52px;
+    animation: reveal 0.4s ease-out;
+  }
+  @keyframes reveal {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #results { animation: none; }
+  }
+
+  .verdict-row {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 28px;
+    margin-bottom: 28px;
+  }
+  .stamp {
+    font-family: "Fraunces", serif;
+    font-weight: 600;
+    font-size: 22px;
+    letter-spacing: 0.06em;
+    padding: 10px 22px;
+    border: 2px solid;
+    border-radius: 2px;
+    transform: rotate(-4deg);
+    display: inline-block;
+  }
+  .stamp.pass    { color: var(--verified); border-color: var(--verified); box-shadow: 3px 3px 0 rgba(95,211,165,0.15); }
+  .stamp.partial { color: var(--partial);  border-color: var(--partial);  box-shadow: 3px 3px 0 rgba(232,184,76,0.15); }
+  .stamp.fail    { color: var(--flagged);  border-color: var(--flagged);  box-shadow: 3px 3px 0 rgba(232,96,76,0.15); }
+
+  .overall-score-num {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 32px;
+    font-weight: 500;
+  }
+  .overall-score-label {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .panel {
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 20px 22px;
+    margin-bottom: 20px;
+  }
+  .panel h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    margin: 0 0 14px 0;
+  }
+
+  .response-annotated {
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  mark.flag {
+    background: none;
+    color: inherit;
+    text-decoration: underline wavy var(--flagged);
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 3px;
+  }
+
+  .agent-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 12px;
-    margin-top: 16px;
+    grid-template-columns: 130px 1fr 60px;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
   }
-  .agent-box {
-    border: 1px solid #e2e4e8;
-    border-radius: 8px;
-    padding: 14px;
+  .agent-row:last-child { border-bottom: none; }
+  .agent-label { font-size: 13px; font-weight: 600; }
+  .meter {
+    height: 6px;
+    background: var(--field);
+    border-radius: 3px;
+    overflow: hidden;
   }
-  .agent-name { font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: #555; }
-  .agent-score { font-size: 28px; font-weight: 800; margin: 6px 0; }
-  .agent-reason { font-size: 13px; color: #555; line-height: 1.4; }
-  .score-high { color: #16a34a; }
-  .score-mid { color: #d97706; }
-  .score-low { color: #dc2626; }
-  .verdict-banner {
-    text-align: center;
-    padding: 20px;
-    border-radius: 8px;
-    font-size: 24px;
-    font-weight: 800;
-    margin-bottom: 16px;
+  .meter-fill { height: 100%; border-radius: 3px; }
+  .agent-score-num {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 14px;
+    text-align: right;
   }
-  .verdict-pass { background: #dcfce7; color: #166534; }
-  .verdict-partial { background: #fef3c7; color: #92400e; }
-  .verdict-fail { background: #fee2e2; color: #991b1b; }
-  .claims-box {
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    border-radius: 8px;
-    padding: 12px 16px;
-    margin-top: 16px;
+  .agent-reason {
+    grid-column: 1 / -1;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
   }
-  .claims-box h4 { margin: 0 0 8px 0; color: #991b1b; font-size: 13px; }
-  .claims-box ul { margin: 0; padding-left: 20px; font-size: 13px; }
-  .suggestions-box {
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
-    border-radius: 8px;
-    padding: 12px 16px;
-    margin-top: 16px;
+
+  .evidence-item {
+    font-size: 13px;
+    color: var(--muted);
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
   }
-  .suggestions-box h4 { margin: 0 0 8px 0; color: #1e40af; font-size: 13px; }
-  .suggestions-box ul { margin: 0; padding-left: 20px; font-size: 13px; }
-  .error { color: #dc2626; padding: 12px; background: #fee2e2; border-radius: 6px; margin-top: 12px; font-size: 14px; }
-  .loading { text-align: center; padding: 30px; color: #666; }
-  .overall-score { font-size: 15px; margin-bottom: 12px; color: #444; }
-  #resultCard { display: none; }
+  .evidence-item:last-child { border-bottom: none; }
+  .evidence-item .idx {
+    font-family: "IBM Plex Mono", monospace;
+    color: var(--paper);
+    margin-right: 8px;
+  }
+
+  .suggestion-list {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 14px;
+  }
+  .suggestion-list li { margin-bottom: 6px; }
 </style>
 </head>
 <body>
 
-<h1>AI Response Validation System</h1>
-<div class="subtitle">Hallucination Detection Assistance — Infosys Springboard Internship, Milestone 1</div>
+<div class="wrap">
 
-<div class="card">
-  <label for="question">Question *</label>
-  <textarea id="question" placeholder="e.g. What is the capital of France?"></textarea>
+  <div class="masthead">
+    <div>
+      <h1>Response Validation</h1>
+      <div class="sub">Hallucination detection — Infosys Springboard, Milestone 1</div>
+    </div>
+    <div class="status" id="status"><span class="status-dot"></span><span id="statusText">ready</span></div>
+  </div>
 
-  <label for="ai_response">AI-Generated Response *</label>
-  <textarea id="ai_response" placeholder="e.g. The capital of France is Berlin, and it has a population of 50 million."></textarea>
+  <div class="field-group">
+    <label class="field-label" for="question">Question <span class="req">*</span></label>
+    <textarea id="question" placeholder="What is the capital of France?"></textarea>
+  </div>
 
-  <label for="reference_answer">Reference Answer (optional)</label>
-  <textarea id="reference_answer" placeholder="e.g. The capital of France is Paris."></textarea>
+  <div class="field-group">
+    <label class="field-label" for="ai_response">Response under review <span class="req">*</span></label>
+    <textarea id="ai_response" placeholder="The capital of France is Berlin, and it has a population of 50 million."></textarea>
+  </div>
 
-  <label for="source_document">Source Document (optional)</label>
-  <textarea id="source_document" placeholder="e.g. France is a country in Europe. Its capital city is Paris."></textarea>
+  <div class="two-col">
+    <div class="field-group">
+      <label class="field-label" for="reference_answer">Reference answer (optional)</label>
+      <textarea id="reference_answer" placeholder="The capital of France is Paris."></textarea>
+    </div>
+    <div class="field-group">
+      <label class="field-label" for="source_document">Source document (optional)</label>
+      <textarea id="source_document" placeholder="France is a country in Europe. Its capital city is Paris."></textarea>
+    </div>
+  </div>
 
-  <button id="submitBtn" onclick="runEvaluation()">Evaluate Response</button>
-</div>
+  <button class="run" id="submitBtn" onclick="runEvaluation()">Run verification</button>
+  <div class="error-box" id="errorBox"></div>
 
-<div id="loadingCard" class="card loading" style="display:none;">
-  Running evaluation across 4 judge agents... this can take 10–30 seconds.
-</div>
+  <div id="results">
 
-<div id="errorCard" class="error" style="display:none;"></div>
+    <div class="verdict-row">
+      <div class="stamp" id="stamp"></div>
+      <div>
+        <div class="overall-score-num" id="overallScoreNum"></div>
+        <div class="overall-score-label">overall score</div>
+      </div>
+    </div>
 
-<div id="resultCard" class="card">
-  <div id="verdictBanner" class="verdict-banner"></div>
-  <div id="overallScore" class="overall-score"></div>
+    <div class="panel">
+      <h3>Response under review — annotated</h3>
+      <div class="response-annotated" id="annotatedResponse"></div>
+    </div>
 
-  <div class="agent-grid" id="agentGrid"></div>
+    <div class="panel">
+      <h3>Judge findings</h3>
+      <div id="agentRows"></div>
+    </div>
 
-  <div id="claimsSection"></div>
-  <div id="suggestionsSection"></div>
+    <div class="panel" id="evidencePanel" style="display:none;">
+      <h3>Evidence consulted</h3>
+      <div id="evidenceList"></div>
+    </div>
+
+    <div class="panel" id="suggestionsPanel" style="display:none;">
+      <h3>Improvement suggestions</h3>
+      <ul class="suggestion-list" id="suggestionsList"></ul>
+    </div>
+
+  </div>
+
 </div>
 
 <script>
 const API_BASE = window.location.origin;
 
-function scoreClass(score) {
-  if (score >= 0.8) return 'score-high';
-  if (score >= 0.5) return 'score-mid';
-  return 'score-low';
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
 }
 
-function verdictClass(verdict) {
-  if (verdict === 'PASS') return 'verdict-pass';
-  if (verdict === 'PARTIAL') return 'verdict-partial';
-  return 'verdict-fail';
+function scoreColor(score) {
+  if (score >= 0.8) return 'var(--verified)';
+  if (score >= 0.5) return 'var(--partial)';
+  return 'var(--flagged)';
+}
+
+function verdictInfo(verdict) {
+  if (verdict === 'PASS') return { cls: 'pass', text: 'PASS' };
+  if (verdict === 'PARTIAL') return { cls: 'partial', text: 'PARTIAL' };
+  return { cls: 'fail', text: 'FAIL' };
+}
+
+function annotateResponse(responseText, claims) {
+  if (!claims || claims.length === 0) {
+    return escapeHtml(responseText);
+  }
+  // Find non-overlapping match ranges (case-insensitive) for each claim.
+  const lower = responseText.toLowerCase();
+  let ranges = [];
+  claims.forEach(claim => {
+    const c = claim.toLowerCase().trim();
+    if (!c) return;
+    const idx = lower.indexOf(c);
+    if (idx !== -1) {
+      ranges.push([idx, idx + c.length]);
+    }
+  });
+  if (ranges.length === 0) return escapeHtml(responseText);
+
+  ranges.sort((a, b) => a[0] - b[0]);
+  const merged = [];
+  ranges.forEach(r => {
+    if (merged.length && r[0] <= merged[merged.length - 1][1]) {
+      merged[merged.length - 1][1] = Math.max(merged[merged.length - 1][1], r[1]);
+    } else {
+      merged.push(r);
+    }
+  });
+
+  let out = '';
+  let cursor = 0;
+  merged.forEach(([start, end]) => {
+    out += escapeHtml(responseText.slice(cursor, start));
+    out += '<mark class="flag">' + escapeHtml(responseText.slice(start, end)) + '</mark>';
+    cursor = end;
+  });
+  out += escapeHtml(responseText.slice(cursor));
+  return out;
+}
+
+function setStatus(state) {
+  const el = document.getElementById('status');
+  const text = document.getElementById('statusText');
+  el.className = 'status' + (state === 'busy' ? ' busy' : state === 'done' ? ' done' : '');
+  text.textContent = state === 'busy' ? 'verifying…' : state === 'done' ? 'complete' : 'ready';
 }
 
 async function runEvaluation() {
@@ -155,17 +409,16 @@ async function runEvaluation() {
   const reference_answer = document.getElementById('reference_answer').value.trim();
   const source_document = document.getElementById('source_document').value.trim();
 
-  const errorCard = document.getElementById('errorCard');
-  const resultCard = document.getElementById('resultCard');
-  const loadingCard = document.getElementById('loadingCard');
+  const errorBox = document.getElementById('errorBox');
+  const results = document.getElementById('results');
   const submitBtn = document.getElementById('submitBtn');
 
-  errorCard.style.display = 'none';
-  resultCard.style.display = 'none';
+  errorBox.style.display = 'none';
+  results.style.display = 'none';
 
   if (!question || !ai_response) {
-    errorCard.textContent = 'Question and AI Response are required.';
-    errorCard.style.display = 'block';
+    errorBox.textContent = 'Question and response under review are both required.';
+    errorBox.style.display = 'block';
     return;
   }
 
@@ -173,8 +426,8 @@ async function runEvaluation() {
   if (reference_answer) payload.reference_answer = reference_answer;
   if (source_document) payload.source_document = source_document;
 
-  loadingCard.style.display = 'block';
   submitBtn.disabled = true;
+  setStatus('busy');
 
   try {
     const res = await fetch(`${API_BASE}/evaluate`, {
@@ -189,23 +442,27 @@ async function runEvaluation() {
     }
 
     const data = await res.json();
-    renderResult(data);
+    renderResult(data, ai_response);
+    setStatus('done');
   } catch (e) {
-    errorCard.textContent = 'Error: ' + e.message;
-    errorCard.style.display = 'block';
+    errorBox.textContent = 'Error: ' + e.message;
+    errorBox.style.display = 'block';
+    setStatus('ready');
   } finally {
-    loadingCard.style.display = 'none';
     submitBtn.disabled = false;
   }
 }
 
-function renderResult(data) {
-  const banner = document.getElementById('verdictBanner');
-  banner.textContent = 'Verdict: ' + data.verdict;
-  banner.className = 'verdict-banner ' + verdictClass(data.verdict);
+function renderResult(data, responseText) {
+  const v = verdictInfo(data.verdict);
+  const stamp = document.getElementById('stamp');
+  stamp.textContent = v.text;
+  stamp.className = 'stamp ' + v.cls;
 
-  document.getElementById('overallScore').textContent =
-    'Overall Score: ' + data.overall_score.toFixed(2) + ' / 1.00';
+  document.getElementById('overallScoreNum').textContent = data.overall_score.toFixed(2);
+
+  const claims = (data.hallucination && data.hallucination.unsupported_claims) || [];
+  document.getElementById('annotatedResponse').innerHTML = annotateResponse(responseText, claims);
 
   const agents = [
     { key: 'relevance', label: 'Relevance' },
@@ -213,46 +470,43 @@ function renderResult(data) {
     { key: 'hallucination', label: 'Hallucination' },
     { key: 'completeness', label: 'Completeness' }
   ];
-
-  const grid = document.getElementById('agentGrid');
-  grid.innerHTML = agents.map(a => {
+  const rows = document.getElementById('agentRows');
+  rows.innerHTML = agents.map(a => {
     const r = data[a.key];
+    const pct = Math.round(r.score * 100);
+    const color = scoreColor(r.score);
     return `
-      <div class="agent-box">
-        <div class="agent-name">${a.label}</div>
-        <div class="agent-score ${scoreClass(r.score)}">${r.score.toFixed(2)}</div>
-        <div class="agent-reason">${r.reason || ''}</div>
+      <div class="agent-row">
+        <div class="agent-label">${a.label}</div>
+        <div class="meter"><div class="meter-fill" style="width:${pct}%;background:${color};"></div></div>
+        <div class="agent-score-num" style="color:${color};">${r.score.toFixed(2)}</div>
+        <div class="agent-reason">${escapeHtml(r.reason || '')}</div>
       </div>
     `;
   }).join('');
 
-  const claimsSection = document.getElementById('claimsSection');
-  const claims = data.hallucination.unsupported_claims || [];
-  if (claims.length > 0) {
-    claimsSection.innerHTML = `
-      <div class="claims-box">
-        <h4>Unsupported Claims Detected</h4>
-        <ul>${claims.map(c => `<li>${c}</li>`).join('')}</ul>
-      </div>
-    `;
+  const evidencePanel = document.getElementById('evidencePanel');
+  const evidence = (data.hallucination && data.hallucination.evidence) || [];
+  if (evidence.length > 0) {
+    document.getElementById('evidenceList').innerHTML = evidence.map((e, i) =>
+      `<div class="evidence-item"><span class="idx">[${i+1}]</span>${escapeHtml(e)}</div>`
+    ).join('');
+    evidencePanel.style.display = 'block';
   } else {
-    claimsSection.innerHTML = '';
+    evidencePanel.style.display = 'none';
   }
 
-  const suggestionsSection = document.getElementById('suggestionsSection');
+  const suggestionsPanel = document.getElementById('suggestionsPanel');
   const suggestions = data.improvement_suggestions || [];
   if (suggestions.length > 0) {
-    suggestionsSection.innerHTML = `
-      <div class="suggestions-box">
-        <h4>Improvement Suggestions</h4>
-        <ul>${suggestions.map(s => `<li>${s}</li>`).join('')}</ul>
-      </div>
-    `;
+    document.getElementById('suggestionsList').innerHTML =
+      suggestions.map(s => `<li>${escapeHtml(s)}</li>`).join('');
+    suggestionsPanel.style.display = 'block';
   } else {
-    suggestionsSection.innerHTML = '';
+    suggestionsPanel.style.display = 'none';
   }
 
-  document.getElementById('resultCard').style.display = 'block';
+  document.getElementById('results').style.display = 'block';
 }
 </script>
 

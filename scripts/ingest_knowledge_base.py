@@ -11,14 +11,13 @@ What it does:
 4. Stores vectors + metadata in ChromaDB at settings.VECTOR_DB_PATH
 """
 import logging
+import re
 import sys
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parent.parent))  # allow `app.*` imports
 
 from datasets import load_dataset
-import chromadb
-from chromadb.utils import embedding_functions
 
 from app.config.settings import settings
 from app.config.logging_config import setup_logging
@@ -26,15 +25,39 @@ from app.config.logging_config import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-CHUNK_SIZE = 500  # characters per chunk — simple fixed-size chunking for Milestone 1
+# Most Q/A records are well under this, so they stay as ONE whole chunk —
+# only long SQuAD contexts get split, and only on sentence boundaries.
+CHUNK_SIZE = 1000
+
+_SENTENCE_SPLIT = re.compile(r"(?<=[.?!])\s+")
 
 
 def chunk_text(text: str, chunk_size: int = CHUNK_SIZE) -> list[str]:
-    """Simple fixed-size chunking. Good enough for short QA-style context; can upgrade later."""
+    """
+    Sentence-aware chunking. A record shorter than chunk_size is kept whole
+    (never fragmented). Longer text is packed sentence-by-sentence, splitting
+    only between sentences — never mid-word/mid-sentence.
+    """
     text = text.strip()
     if not text:
         return []
-    return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
+    if len(text) <= chunk_size:
+        return [text]
+
+    sentences = _SENTENCE_SPLIT.split(text)
+    chunks: list[str] = []
+    current = ""
+    for sentence in sentences:
+        candidate = f"{current} {sentence}".strip() if current else sentence
+        if len(candidate) <= chunk_size:
+            current = candidate
+        else:
+            if current:
+                chunks.append(current)
+            current = sentence
+    if current:
+        chunks.append(current)
+    return chunks
 
 
 def load_truthfulqa() -> list[dict]:
@@ -97,15 +120,9 @@ def build_chunks(records: list[dict]) -> tuple[list[str], list[str], list[dict]]
 
 
 def ingest() -> None:
-    client = chromadb.PersistentClient(path=settings.VECTOR_DB_PATH)
+    from app.services.vector_store import VectorStore
 
-    embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
-        model_name=settings.EMBEDDING_MODEL
-    )
-    collection = client.get_or_create_collection(
-        name="knowledge_base",
-        embedding_function=embedding_fn,
-    )
+    store = VectorStore()
 
     all_records = load_truthfulqa() + load_squad()
     ids, texts, metadatas = build_chunks(all_records)
@@ -113,14 +130,14 @@ def ingest() -> None:
     logger.info("Embedding + storing %d chunks...", len(ids))
     batch_size = 500
     for i in range(0, len(ids), batch_size):
-        collection.add(
+        store.add(
             ids=ids[i:i + batch_size],
             documents=texts[i:i + batch_size],
             metadatas=metadatas[i:i + batch_size],
         )
         logger.info("Stored batch %d-%d", i, min(i + batch_size, len(ids)))
 
-    logger.info("Ingestion complete. Total chunks in collection: %d", collection.count())
+    logger.info("Ingestion complete. Total chunks in collection: %d", store.count())
 
 
 if __name__ == "__main__":
