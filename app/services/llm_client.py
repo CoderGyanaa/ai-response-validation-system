@@ -3,6 +3,7 @@ Provider-agnostic LLM client. Judge agents call this instead of talking to
 Anthropic/OpenAI SDKs directly, so the provider can be swapped via .env.
 """
 import logging
+import re
 import time
 
 from app.config.settings import settings
@@ -11,6 +12,19 @@ logger = logging.getLogger(__name__)
 
 MAX_RETRIES = 3
 BASE_DELAY_SECONDS = 2
+
+# Gemini 429 errors include the server's own suggested wait time, e.g.:
+#   retry_delay { seconds: 27 }
+# Honoring this instead of a fixed backoff avoids retrying before the quota
+# window has actually reset, which just burns another failed call.
+_RETRY_DELAY_PATTERN = re.compile(r"retry_delay\s*\{\s*seconds:\s*(\d+)")
+
+
+def _extract_retry_delay(exc: Exception) -> float | None:
+    match = _RETRY_DELAY_PATTERN.search(str(exc))
+    if match:
+        return float(match.group(1))
+    return None
 
 
 class LLMClient:
@@ -33,11 +47,19 @@ class LLMClient:
                 last_error = exc
                 is_rate_limit = "429" in str(exc) or "rate" in str(exc).lower() or "quota" in str(exc).lower()
                 if attempt < MAX_RETRIES and is_rate_limit:
-                    delay = BASE_DELAY_SECONDS * (2 ** (attempt - 1))
-                    logger.warning(
-                        "LLM call hit rate limit (attempt %d/%d), retrying in %ds: %s",
-                        attempt, MAX_RETRIES, delay, exc,
-                    )
+                    server_delay = _extract_retry_delay(exc)
+                    if server_delay is not None:
+                        delay = server_delay + 1  # small buffer past the server's own estimate
+                        logger.warning(
+                            "LLM call hit rate limit (attempt %d/%d), server asked for %ds — waiting %ds: %s",
+                            attempt, MAX_RETRIES, server_delay, delay, exc,
+                        )
+                    else:
+                        delay = BASE_DELAY_SECONDS * (2 ** (attempt - 1))
+                        logger.warning(
+                            "LLM call hit rate limit (attempt %d/%d), no server delay given — waiting %ds: %s",
+                            attempt, MAX_RETRIES, delay, exc,
+                        )
                     time.sleep(delay)
                     continue
                 raise

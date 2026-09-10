@@ -8,6 +8,39 @@ LLM-generated responses can sound confident while containing unsupported or fabr
 ## Objective
 Build a RAG-based, multi-agent evaluation system that scores AI responses against retrieved reference evidence and flags likely hallucinations.
 
+## Current Status
+
+| Item | Status |
+|---|---|
+| Milestone 1 | **COMPLETE** |
+| Milestone 2 | **COMPLETE** |
+| Automated tests | **14/14 PASS** |
+| M2 validation suite | **22/22 expected outcomes matched** |
+
+## Milestones & Progress
+
+### Milestone 1 — Foundation & Knowledge Base — COMPLETE
+
+**M1.1 Research** — Covered LLM evaluation, factuality, relevance, completeness, faithfulness, hallucination detection, RAG architecture, embeddings, semantic similarity, vector search, LLM-as-a-Judge, RAGAS, TruLens, TruthfulQA, and SQuAD. Full notes in [`docs/research/research.md`](docs/research/research.md).
+
+**M1.2 Architecture** — Built the Evaluation Orchestrator coordinating the Relevance Judge, Accuracy Judge, Hallucination Detection Agent, Completeness Judge, and Verdict Agent, with a RAG retrieval flow feeding evidence to each judge. Full breakdown in [`docs/architecture/architecture.md`](docs/architecture/architecture.md).
+
+**M1.3 Evaluation Input Module** — Single FastAPI endpoint accepting a required question and AI response, with optional reference answer and source document, backed by Pydantic input validation.
+
+**M1.4 Reference Knowledge Base** — Ingests TruthfulQA and SQuAD via Hugging Face, with sentence-aware, record-preserving chunking (short Q/A records are kept whole; long contexts split only on sentence boundaries), embedded locally with `all-MiniLM-L6-v2`, and stored in ChromaDB for semantic retrieval. Retrieval quality is verified by an automated test confirming a "capital of France" query surfaces evidence containing "Paris."
+
+**Testing:** 14/14 automated tests passing.
+
+### Milestone 2 — Evaluation Judge Agents & Validation — COMPLETE
+
+**M2.1 Relevance Judge Agent** — Scores relevance with reasoning, using defined categories: `fully_relevant`, `partially_relevant`, `unrelated`, `off_topic` (with explicit criteria distinguishing "same topic, wrong answer" from "no connection at all").
+
+**M2.2 Accuracy Judge Agent** — Scores factual correctness with reasoning and supporting evidence, using defined categories: `correct`, `partially_correct`, `incorrect`, `contradictory`. Compares against the reference answer when available, or retrieved evidence otherwise. Correctly classifies multi-claim responses as `partially_correct` when at least one substantive claim is right, rather than marking the whole response `incorrect`.
+
+**M2.3 Hallucination Detection Agent** — Breaks the response into individual claims and cross-references each against retrieved evidence, returning a `hallucination_status` (`none` / `partial` / `full`) plus a `claim_evidence` list — each flagged claim paired with the contradicting evidence and a reason. Distinguishes genuine unsupported/contradictory claims from responses that are simply irrelevant or off-topic and never attempted to answer the question (these are not treated as hallucinations).
+
+**M2.4 Agent Evaluation & Consistency Validation** — Built a curated validation set of 8 cases spanning correct, incorrect, partially correct, irrelevant, off-topic, incomplete, unsupported-claim, and no-reference/no-evidence response types. Ran through the real agents via [`scripts/run_validation_suite.py`](scripts/run_validation_suite.py) — **22 real LLM evaluation calls, 0 mismatches against expected outcomes**. Automated tests: 14/14 passed.
+
 ## Key Features
 - Single evaluation submission endpoint (question + AI response, optional reference/source)
 - Multi-agent orchestrator: Relevance, Accuracy, Hallucination, Completeness judges + Verdict aggregator — all backed by real LLM scoring (Gemini)
@@ -34,6 +67,9 @@ Agent Orchestrator (app/agents/orchestrator.py)
 Verdict Agent → EvaluationResult (JSON)
 
 ```
+
+![Architecture diagram](docs/architecture/architecture-diagram.svg)
+
 <img width="1536" height="1024" alt="milestone 1" src="https://github.com/user-attachments/assets/87ee7837-422d-4566-9794-377fe95fa1ee" />
 
 ## Agent Responsibilities
@@ -95,8 +131,8 @@ project/
 │   ├── services/         # LLM client (with retry/backoff), vector store
 │   └── config/          # settings, logging
 ├── data/               # dataset README (no committed data)
-├── scripts/            # ingest_knowledge_base.py
-├── tests/              # test_api.py, test_agents.py
+├── scripts/            # ingest_knowledge_base.py, run_validation_suite.py
+├── tests/              # test_api.py, test_agents.py, test_retrieval.py
 ├── docs/               # architecture / research / evaluation notes
 └── main.py             # FastAPI app entrypoint
 ```
@@ -156,18 +192,21 @@ Sample response (real Gemini output):
 ```bash
 pytest tests/ -v
 ```
-11 tests: API-level input validation (`test_api.py`) and agent-level scoring logic with mocked LLM calls, including markdown-fenced JSON parsing and graceful-failure paths (`test_agents.py`).
+14 tests: API-level input validation (`test_api.py`), agent-level scoring logic with mocked LLM calls including markdown-fenced JSON parsing and graceful-failure paths (`test_agents.py`), and retrieval quality (`test_retrieval.py`).
+
+For Milestone 2 agent consistency validation against real Gemini calls:
+```bash
+python scripts/run_validation_suite.py
+```
 
 ## Limitations
-- Fixed-size chunking (500 chars) — no semantic-aware chunking yet
 - No results dashboard yet
 - No caching of LLM calls — repeated evaluations re-query the LLM every time
-- Judge prompt quality has not been benchmarked against human evaluation
+- Judge prompt quality has been validated against a curated 8-case set (M2.4), not yet benchmarked against large-scale human evaluation
 
 ## Future Improvements
 - Results dashboard
-- Semantic/recursive chunking for the knowledge base
-- Human-evaluation comparison for judge reliability and prompt tuning
+- Human-evaluation comparison at larger scale for judge reliability
 - Caching layer for repeated evaluations
 - Batch evaluation endpoint
 

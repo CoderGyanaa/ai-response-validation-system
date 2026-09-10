@@ -15,13 +15,25 @@ class EvaluationRequest(BaseModel):
 class JudgeResult(BaseModel):
     agent_name: str
     score: float = Field(..., ge=0, le=1)
+    category: str = Field("", description="Discrete label for the score band, e.g. 'fully_relevant', 'incorrect'")
     reason: str
     evidence: List[str] = []
 
 
+class FlaggedClaim(BaseModel):
+    claim: str
+    supported: bool
+    evidence: List[str] = []
+    reason: str = ""
+
+
 class HallucinationResult(JudgeResult):
     hallucination_detected: bool
+    hallucination_status: str = Field("none", description="'none' | 'partial' | 'full'")
     unsupported_claims: List[str] = []
+    claim_evidence: List[FlaggedClaim] = Field(
+        default=[], description="Per-claim breakdown with supporting/contradicting evidence and reasoning"
+    )
 
 
 class EvaluationResult(BaseModel):
