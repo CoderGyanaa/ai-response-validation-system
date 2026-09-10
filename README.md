@@ -120,7 +120,8 @@ curl -X POST [http://127.0.0.1:8000/evaluate](http://127.0.0.1:8000/evaluate) \
 See [`data/README.md`](data/README.md) — datasets are not committed, only reproduced via `scripts/ingest_knowledge_base.py`. Currently ingests 817 TruthfulQA records + 2,000 SQuAD records (~5,562 chunks) into the local vector store.
 
 ## Project Structure
-```
+
+```text
 project/
 ├── app/
 │   ├── api/            # FastAPI routes
