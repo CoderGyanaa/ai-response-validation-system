@@ -1,6 +1,6 @@
 # AI Response Validation System — Hallucination Detection Assistance
 
-**Infosys Springboard Internship Project — Milestone 1**
+**Infosys Springboard Internship Project — Milestone 3**
 
 ## Problem Statement
 LLM-generated responses can sound confident while containing unsupported or fabricated claims. There's no standard, automated way to check a response's relevance, factual accuracy, faithfulness to source evidence, and completeness.
@@ -14,8 +14,10 @@ Build a RAG-based, multi-agent evaluation system that scores AI responses agains
 |---|---|
 | Milestone 1 | **COMPLETE** |
 | Milestone 2 | **COMPLETE** |
-| Automated tests | **14/14 PASS** |
+| Milestone 3 | **COMPLETE** |
+| Automated tests | **30/30 PASS** |
 | M2 validation suite | **22/22 expected outcomes matched** |
+| M3.4 batch evaluation | **Manually verified end-to-end** |
 
 ## Milestones & Progress
 
@@ -40,6 +42,20 @@ Build a RAG-based, multi-agent evaluation system that scores AI responses agains
 **M2.3 Hallucination Detection Agent** — Breaks the response into individual claims and cross-references each against retrieved evidence, returning a `hallucination_status` (`none` / `partial` / `full`) plus a `claim_evidence` list — each flagged claim paired with the contradicting evidence and a reason. Distinguishes genuine unsupported/contradictory claims from responses that are simply irrelevant or off-topic and never attempted to answer the question (these are not treated as hallucinations).
 
 **M2.4 Agent Evaluation & Consistency Validation** — Built a curated validation set of 8 cases spanning correct, incorrect, partially correct, irrelevant, off-topic, incomplete, unsupported-claim, and no-reference/no-evidence response types. Ran through the real agents via [`scripts/run_validation_suite.py`](scripts/run_validation_suite.py) — **22 real LLM evaluation calls, 0 mismatches against expected outcomes**. Automated tests: 14/14 passed.
+
+### Milestone 3 — Completeness, Verdict, Results Display & Batch Evaluation — COMPLETE
+
+Full details in [`docs/evaluation/milestone3.md`](docs/evaluation/milestone3.md).
+
+**M3.1 Completeness Judge Agent** — Extended to break the question into individual sub-requirements and report `addressed_aspects` and `missing_aspects` explicitly, not just a single score.
+
+**M3.2 Verdict Agent & Weighted Evaluation** — Verdict labeling updated to the spec wording (`Pass` / `Needs Improvement` / `Fail`), plus a `consolidated_summary` and `major_issues` list. A hallucination with `hallucination_status = "full"` now forces a Fail verdict regardless of the weighted average, so a fabricated answer can't be masked by good scores elsewhere.
+
+**M3.3 Per-Dimension Scoring & Evaluation Results Display** — Rebuilt the results UI into a full evaluation dashboard: a hero verdict card, a four-metric score overview, a pipeline visualization, a "Why this verdict?" breakdown (strengths/warnings/critical issues), collapsible per-judge detail panels (including claim-level hallucination evidence and completeness aspect lists), an evidence explorer, and a response-vs-evidence comparison — all sourced strictly from existing backend fields.
+
+**M3.4 Batch Evaluation Module** — Upload a CSV of question/response pairs and evaluate all of them through the same Evaluation Orchestrator used for single evaluations. Invalid rows (missing required fields, malformed rows) are reported individually without stopping the rest of the batch. Progress streams as each row actually completes. Results are shown in a table with aggregate statistics (average score per dimension, Pass/Needs Improvement/Fail counts, hallucination frequency), and each row can be inspected using the same detailed view built for M3.3.
+
+**Testing:** 30/30 automated tests passing (17 from Milestones 1–2, plus 13 new tests covering CSV parsing, batch processing, and the batch API endpoint). The batch module was additionally verified manually end-to-end with a mixed valid/invalid CSV.
 
 ## Key Features
 - Single evaluation submission endpoint (question + AI response, optional reference/source)
@@ -121,20 +137,20 @@ See [`data/README.md`](data/README.md) — datasets are not committed, only repr
 
 ## Project Structure
 
-```text
-project/
+```project/
 ├── app/
-│   ├── api/            # FastAPI routes
+│   ├── api/            # FastAPI routes (single-eval, batch)
 │   ├── agents/          # orchestrator, 4 judge agents, verdict agent, prompt utils
-│   ├── evaluation/       # input validation & service layer
+│   ├── evaluation/       # input validation, service layer, CSV parser, batch service
 │   ├── retrieval/        # retriever (queries vector store)
-│   ├── models/          # Pydantic schemas
+│   ├── models/          # Pydantic schemas (single-eval, batch)
 │   ├── services/         # LLM client (with retry/backoff), vector store
+│   ├── static/          # frontend (single evaluation + batch upload UI)
 │   └── config/          # settings, logging
 ├── data/               # dataset README (no committed data)
 ├── scripts/            # ingest_knowledge_base.py, run_validation_suite.py
-├── tests/              # test_api.py, test_agents.py, test_retrieval.py
-├── docs/               # architecture / research / evaluation notes
+├── tests/              # test_api.py, test_agents.py, test_retrieval.py, test_batch.py
+├── docs/               # architecture / research / evaluation / agile notes
 └── main.py             # FastAPI app entrypoint
 ```
 
@@ -193,7 +209,7 @@ Sample response (real Gemini output):
 ```bash
 pytest tests/ -v
 ```
-14 tests: API-level input validation (`test_api.py`), agent-level scoring logic with mocked LLM calls including markdown-fenced JSON parsing and graceful-failure paths (`test_agents.py`), and retrieval quality (`test_retrieval.py`).
+30 tests: API-level input validation (`test_api.py`), agent-level scoring logic with mocked LLM calls including markdown-fenced JSON parsing and graceful-failure paths (`test_agents.py`), retrieval quality (`test_retrieval.py`), and the M3.4 batch evaluation module — CSV parsing, per-row validation, batch processing, and the streaming API endpoint (`test_batch.py`).
 
 For Milestone 2 agent consistency validation against real Gemini calls:
 ```bash
@@ -201,12 +217,11 @@ python scripts/run_validation_suite.py
 ```
 
 ## Limitations
-- No results dashboard yet
 - No caching of LLM calls — repeated evaluations re-query the LLM every time
 - Judge prompt quality has been validated against a curated 8-case set (M2.4), not yet benchmarked against large-scale human evaluation
+- Batch evaluation processes rows sequentially, not in parallel
 
 ## Future Improvements
-- Results dashboard
 - Human-evaluation comparison at larger scale for judge reliability
 - Caching layer for repeated evaluations
 - Batch evaluation endpoint

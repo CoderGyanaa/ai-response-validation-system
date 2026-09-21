@@ -3,6 +3,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config.logging_config import setup_logging
 from app.api.routes import router
+from app.api.batch_routes import router as batch_router
 
 setup_logging()
 
@@ -13,4 +14,5 @@ app = FastAPI(
 )
 
 app.include_router(router)
+app.include_router(batch_router)
 app.mount("/", StaticFiles(directory="app/static", html=True), name="static")

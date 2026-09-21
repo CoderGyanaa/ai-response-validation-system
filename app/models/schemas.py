@@ -36,13 +36,21 @@ class HallucinationResult(JudgeResult):
     )
 
 
+class CompletenessResult(JudgeResult):
+    addressed_aspects: List[str] = Field(default=[], description="Sub-questions/requirements the response covers")
+    missing_aspects: List[str] = Field(default=[], description="Sub-questions/requirements the response omits or under-covers")
+
+
 class EvaluationResult(BaseModel):
     question: str
     ai_response: str
     relevance: JudgeResult
     accuracy: JudgeResult
     hallucination: HallucinationResult
-    completeness: JudgeResult
+    completeness: CompletenessResult
     overall_score: float
     verdict: str
+    verdict_label: str = Field("", description="Spec-facing verdict wording: 'Pass' | 'Needs Improvement' | 'Fail'")
+    major_issues: List[str] = Field(default=[], description="Consolidated list of the most significant problems found")
+    consolidated_summary: str = Field("", description="One-paragraph summary combining findings across all four judges")
     improvement_suggestions: List[str] = []

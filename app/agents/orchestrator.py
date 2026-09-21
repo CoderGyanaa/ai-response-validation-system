@@ -35,9 +35,7 @@ class EvaluationOrchestrator:
         hallucination = self.hallucination_agent.evaluate(request, evidence)
         completeness = self.completeness_agent.evaluate(request, evidence)
 
-        overall, verdict, suggestions = self.verdict_agent.aggregate(
-            relevance, accuracy, hallucination, completeness
-        )
+        result = self.verdict_agent.aggregate(relevance, accuracy, hallucination, completeness)
 
         return EvaluationResult(
             question=request.question,
@@ -46,7 +44,10 @@ class EvaluationOrchestrator:
             accuracy=accuracy,
             hallucination=hallucination,
             completeness=completeness,
-            overall_score=overall,
-            verdict=verdict,
-            improvement_suggestions=suggestions,
+            overall_score=result["overall_score"],
+            verdict=result["verdict"],
+            verdict_label=result["verdict_label"],
+            major_issues=result["major_issues"],
+            consolidated_summary=result["consolidated_summary"],
+            improvement_suggestions=result["improvement_suggestions"],
         )

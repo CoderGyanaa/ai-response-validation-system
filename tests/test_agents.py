@@ -72,10 +72,25 @@ def test_hallucination_agent_no_claims_means_status_none(mock_complete):
 
 @patch("app.services.llm_client.LLMClient.complete")
 def test_completeness_agent_parses_clean_json(mock_complete):
-    mock_complete.return_value = '{"score": 1.0, "reason": "Fully answers the question."}'
+    mock_complete.return_value = '{"score": 1.0, "addressed_aspects": ["capital city"], "missing_aspects": [], "reason": "Fully answers the question."}'
     agent = CompletenessJudgeAgent()
     result = agent.evaluate(REQUEST, [])
     assert result.score == 1.0
+    assert result.addressed_aspects == ["capital city"]
+    assert result.missing_aspects == []
+    assert result.category == "complete"
+
+
+@patch("app.services.llm_client.LLMClient.complete")
+def test_completeness_agent_lists_missing_aspects(mock_complete):
+    mock_complete.return_value = (
+        '{"score": 0.5, "addressed_aspects": ["capital city"], '
+        '"missing_aspects": ["population figure"], "reason": "Capital given, population omitted."}'
+    )
+    agent = CompletenessJudgeAgent()
+    result = agent.evaluate(REQUEST, [])
+    assert result.missing_aspects == ["population figure"]
+    assert result.category == "mostly_complete"
 
 
 @patch("app.services.llm_client.LLMClient.complete")
@@ -88,7 +103,7 @@ def test_agent_fails_gracefully_on_bad_llm_output(mock_complete):
 
 
 def test_verdict_agent_aggregates_scores():
-    from app.models.schemas import JudgeResult, HallucinationResult
+    from app.models.schemas import JudgeResult, HallucinationResult, CompletenessResult
 
     relevance = JudgeResult(agent_name="relevance", score=0.9, reason="r")
     accuracy = JudgeResult(agent_name="accuracy", score=0.9, reason="r")
@@ -96,19 +111,20 @@ def test_verdict_agent_aggregates_scores():
         agent_name="hallucination", score=0.9, reason="r",
         hallucination_detected=False, unsupported_claims=[],
     )
-    completeness = JudgeResult(agent_name="completeness", score=0.9, reason="r")
+    completeness = CompletenessResult(agent_name="completeness", score=0.9, reason="r")
 
     verdict_agent = VerdictAgent()
-    overall, verdict, suggestions = verdict_agent.aggregate(
-        relevance, accuracy, hallucination, completeness
-    )
-    assert overall > 0.8
-    assert verdict == "PASS"
-    assert suggestions == []
+    result = verdict_agent.aggregate(relevance, accuracy, hallucination, completeness)
+    assert result["overall_score"] > 0.8
+    assert result["verdict"] == "PASS"
+    assert result["verdict_label"] == "Pass"
+    assert result["improvement_suggestions"] == []
+    assert result["major_issues"] == []
+    assert "favorably" in result["consolidated_summary"]
 
 
 def test_verdict_agent_flags_hallucination_suggestion():
-    from app.models.schemas import JudgeResult, HallucinationResult
+    from app.models.schemas import JudgeResult, HallucinationResult, CompletenessResult
 
     relevance = JudgeResult(agent_name="relevance", score=0.9, reason="r")
     accuracy = JudgeResult(agent_name="accuracy", score=0.5, reason="r")
@@ -116,10 +132,47 @@ def test_verdict_agent_flags_hallucination_suggestion():
         agent_name="hallucination", score=0.2, reason="r",
         hallucination_detected=True, unsupported_claims=["bad claim"],
     )
-    completeness = JudgeResult(agent_name="completeness", score=0.9, reason="r")
+    completeness = CompletenessResult(agent_name="completeness", score=0.9, reason="r")
 
     verdict_agent = VerdictAgent()
-    overall, verdict, suggestions = verdict_agent.aggregate(
-        relevance, accuracy, hallucination, completeness
+    result = verdict_agent.aggregate(relevance, accuracy, hallucination, completeness)
+    assert any("unsupported claims" in s.lower() for s in result["improvement_suggestions"])
+    assert len(result["major_issues"]) > 0
+
+
+def test_verdict_agent_forces_fail_on_full_hallucination():
+    from app.models.schemas import JudgeResult, HallucinationResult, CompletenessResult
+
+    # Even with otherwise-high scores, a "full" hallucination must force FAIL.
+    relevance = JudgeResult(agent_name="relevance", score=1.0, reason="r")
+    accuracy = JudgeResult(agent_name="accuracy", score=0.9, reason="r")
+    hallucination = HallucinationResult(
+        agent_name="hallucination", score=0.9, reason="r",
+        hallucination_detected=True, hallucination_status="full", unsupported_claims=["fabricated claim"],
     )
-    assert any("unsupported claims" in s.lower() for s in suggestions)
+    completeness = CompletenessResult(agent_name="completeness", score=1.0, reason="r")
+
+    verdict_agent = VerdictAgent()
+    result = verdict_agent.aggregate(relevance, accuracy, hallucination, completeness)
+    assert result["verdict"] == "FAIL"
+    assert result["verdict_label"] == "Fail"
+
+
+def test_verdict_agent_reports_missing_aspects():
+    from app.models.schemas import JudgeResult, HallucinationResult, CompletenessResult
+
+    relevance = JudgeResult(agent_name="relevance", score=0.9, reason="r")
+    accuracy = JudgeResult(agent_name="accuracy", score=0.9, reason="r")
+    hallucination = HallucinationResult(
+        agent_name="hallucination", score=0.9, reason="r",
+        hallucination_detected=False, unsupported_claims=[],
+    )
+    completeness = CompletenessResult(
+        agent_name="completeness", score=0.5, reason="r",
+        missing_aspects=["population figure"],
+    )
+
+    verdict_agent = VerdictAgent()
+    result = verdict_agent.aggregate(relevance, accuracy, hallucination, completeness)
+    assert any("missing" in issue.lower() for issue in result["major_issues"])
+    assert any("missing" in s.lower() for s in result["improvement_suggestions"])
