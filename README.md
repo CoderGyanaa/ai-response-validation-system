@@ -1,6 +1,6 @@
 # AI Response Validation System — Hallucination Detection Assistance
 
-**Infosys Springboard Internship Project — Milestone 3**
+**Infosys Springboard Internship Project — Milestone 4**
 
 ## Problem Statement
 LLM-generated responses can sound confident while containing unsupported or fabricated claims. There's no standard, automated way to check a response's relevance, factual accuracy, faithfulness to source evidence, and completeness.
@@ -15,9 +15,11 @@ Build a RAG-based, multi-agent evaluation system that scores AI responses agains
 | Milestone 1 | **COMPLETE** |
 | Milestone 2 | **COMPLETE** |
 | Milestone 3 | **COMPLETE** |
-| Automated tests | **30/30 PASS** |
+| Milestone 4 | **COMPLETE** |
+| Automated tests | **142 collected, 140 passed, 2 documented xfail, 0 unexpected failures** |
 | M2 validation suite | **22/22 expected outcomes matched** |
-| M3.4 batch evaluation | **Manually verified end-to-end** |
+| M4.3 end-to-end suite | **87 tests — real orchestrator/agents/store/API/dashboard/PDF pipeline** |
+| Two-AI-system demo | **Datasets and steps prepared, not yet executed — see `docs/evaluation/final_demo_plan.md`** |
 
 ## Milestones & Progress
 
@@ -56,6 +58,20 @@ Full details in [`docs/evaluation/milestone3.md`](docs/evaluation/milestone3.md)
 **M3.4 Batch Evaluation Module** — Upload a CSV of question/response pairs and evaluate all of them through the same Evaluation Orchestrator used for single evaluations. Invalid rows (missing required fields, malformed rows) are reported individually without stopping the rest of the batch. Progress streams as each row actually completes. Results are shown in a table with aggregate statistics (average score per dimension, Pass/Needs Improvement/Fail counts, hallucination frequency), and each row can be inspected using the same detailed view built for M3.3.
 
 **Testing:** 30/30 automated tests passing (17 from Milestones 1–2, plus 13 new tests covering CSV parsing, batch processing, and the batch API endpoint). The batch module was additionally verified manually end-to-end with a mixed valid/invalid CSV.
+
+### Milestone 4 — Dashboard, PDF Export, End-to-End Testing & Final Documentation — COMPLETE
+
+Full details in [`docs/evaluation/milestone4.md`](docs/evaluation/milestone4.md) (technical documentation), [`docs/evaluation/milestone4_testing.md`](docs/evaluation/milestone4_testing.md) (M4.3 test report), and [`docs/evaluation/final_project_report.md`](docs/evaluation/final_project_report.md) (final project report).
+
+**M4.1 Evaluation Scoring Dashboard** — Every single and batch evaluation is now persisted to a SQLite results store ([`app/services/results_store.py`](app/services/results_store.py)). A new Dashboard view (KPI cards, quality-score rings, verdict donut chart, score distribution, hallucination/completeness intelligence, top recurring issues, batch history, filters, paginated records, and drill-down into the existing detailed result view) is generated entirely from that stored data — no chart library added, all visuals are hand-built inline SVG.
+
+**M4.2 Evaluation Report Export** — A structured PDF report per batch ([`app/services/report_generator.py`](app/services/report_generator.py), `GET /reports/batch/{batch_id}/pdf`), built with reportlab's auto-wrapping flowables so long reasoning and evidence never overlap or get cut off, reading from the same store as the dashboard for guaranteed consistency.
+
+**M4.3 End-to-End Testing & System Validation** — An 87-test end-to-end suite ([`tests/test_e2e.py`](tests/test_e2e.py)) runs the real orchestrator, all four agents, the Verdict Agent, the results store, the API, the dashboard endpoints, and the PDF generator together, across 12 representative scenarios and a full batch workflow. Dashboard statistics are checked against both hand-calculated expectations and independent raw SQL queries; PDF content is checked against the live dashboard API for the same batch. This testing pass found and fixed three real defects (a floating-point verdict-threshold boundary issue, a completeness category/score mismatch, and a hallucination status/claims consistency issue), plus caught and fixed a serious regression where the Retriever had reverted to a non-functional placeholder that never queried the vector store at all.
+
+**M4.4 Technical Documentation, Project Report & Final Demonstration** — Complete technical documentation covering every component, a final project report, and a two-AI-system demo plan with prepared, verified-parseable datasets ([`docs/evaluation/demo_datasets/`](docs/evaluation/demo_datasets/)) — the live demo run itself is prepared but not yet executed; see the final project report for details.
+
+**Testing:** 142 automated tests collected (140 passing, 2 documented and intentionally `xfail`ed known limitations).
 
 ## Key Features
 - Single evaluation submission endpoint (question + AI response, optional reference/source)
@@ -139,18 +155,18 @@ See [`data/README.md`](data/README.md) — datasets are not committed, only repr
 
 ```project/
 ├── app/
-│   ├── api/            # FastAPI routes (single-eval, batch)
+│   ├── api/            # FastAPI routes (single-eval, batch, dashboard, reports)
 │   ├── agents/          # orchestrator, 4 judge agents, verdict agent, prompt utils
 │   ├── evaluation/       # input validation, service layer, CSV parser, batch service
 │   ├── retrieval/        # retriever (queries vector store)
 │   ├── models/          # Pydantic schemas (single-eval, batch)
-│   ├── services/         # LLM client (with retry/backoff), vector store
-│   ├── static/          # frontend (single evaluation + batch upload UI)
+│   ├── services/         # LLM client (retry/backoff), vector store, results store, PDF report generator
+│   ├── static/          # frontend (single evaluation + batch upload + dashboard UI)
 │   └── config/          # settings, logging
-├── data/               # dataset README (no committed data)
-├── scripts/            # ingest_knowledge_base.py, run_validation_suite.py
-├── tests/              # test_api.py, test_agents.py, test_retrieval.py, test_batch.py
-├── docs/               # architecture / research / evaluation / agile notes
+├── data/               # dataset README (no committed data); evaluation_results.db (git-ignored)
+├── scripts/            # ingest_knowledge_base.py, run_validation_suite.py, run_consistency_check.py
+├── tests/              # test_api.py, test_agents.py, test_retrieval.py, test_batch.py, test_dashboard.py, test_report.py, test_e2e.py
+├── docs/               # architecture / research / evaluation / agile / final report / demo plan
 └── main.py             # FastAPI app entrypoint
 ```
 
@@ -209,22 +225,29 @@ Sample response (real Gemini output):
 ```bash
 pytest tests/ -v
 ```
-30 tests: API-level input validation (`test_api.py`), agent-level scoring logic with mocked LLM calls including markdown-fenced JSON parsing and graceful-failure paths (`test_agents.py`), retrieval quality (`test_retrieval.py`), and the M3.4 batch evaluation module — CSV parsing, per-row validation, batch processing, and the streaming API endpoint (`test_batch.py`).
+142 tests collected: API-level input validation (`test_api.py`), agent-level scoring logic (`test_agents.py`), retrieval quality (`test_retrieval.py`), the batch evaluation module (`test_batch.py`), dashboard endpoints (`test_dashboard.py`), PDF report generation (`test_report.py`), and an 87-test end-to-end suite (`test_e2e.py`) that runs the real orchestrator/agents/store/API/dashboard/PDF pipeline together — see [`docs/evaluation/milestone4_testing.md`](docs/evaluation/milestone4_testing.md) for the full methodology and defect list.
 
 For Milestone 2 agent consistency validation against real Gemini calls:
 ```bash
 python scripts/run_validation_suite.py
+```
+For repeat-run scoring consistency against real Gemini calls (M4.3):
+```bash
+python scripts/run_consistency_check.py
 ```
 
 ## Limitations
 - No caching of LLM calls — repeated evaluations re-query the LLM every time
 - Judge prompt quality has been validated against a curated 8-case set (M2.4), not yet benchmarked against large-scale human evaluation
 - Batch evaluation processes rows sequentially, not in parallel
+- A total LLM outage is currently stored as a genuine Fail verdict rather than flagged as an evaluation error (documented defect D-1)
+- A whitespace-only question passes schema validation (documented defect D-5, low severity)
 
 ## Future Improvements
+- Run and record the two-AI-system demonstration comparison (datasets and steps already prepared — see [`docs/evaluation/final_demo_plan.md`](docs/evaluation/final_demo_plan.md))
 - Human-evaluation comparison at larger scale for judge reliability
 - Caching layer for repeated evaluations
-- Batch evaluation endpoint
+- Parallelize per-row judge calls to reduce batch latency
 
 ## Contributors / Internship Context
 Built as part of the Infosys Springboard "AI Response Validation System with Hallucination Detection Assistance" internship project.

@@ -53,10 +53,16 @@ class CompletenessJudgeAgent(BaseJudgeAgent):
             raw = self.llm.complete(prompt)
             parsed = extract_json(raw)
             missing = parsed.get("missing_aspects", []) or []
-            category = "complete" if not missing else ("mostly_complete" if float(parsed["score"]) >= 0.5 else "incomplete")
+            score = float(parsed["score"])
+            if score >= 0.8 and not missing:
+                category = "complete"
+            elif score >= 0.5:
+                category = "mostly_complete"
+            else:
+                category = "incomplete"
             return CompletenessResult(
                 agent_name=self.name,
-                score=float(parsed["score"]),
+                score=score,
                 category=category,
                 reason=parsed.get("reason", ""),
                 evidence=[],

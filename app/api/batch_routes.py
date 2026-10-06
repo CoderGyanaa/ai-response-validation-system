@@ -15,9 +15,11 @@ from fastapi.responses import StreamingResponse
 
 from app.evaluation.csv_parser import parse_batch_csv
 from app.evaluation.batch_service import BatchEvaluationService
+from app.services.results_store import ResultsStore
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+results_store = ResultsStore()
 
 
 @router.post("/evaluate/batch")
@@ -35,10 +37,12 @@ async def evaluate_batch(file: UploadFile = File(...)):
 
     total_records = len(valid_rows) + len(invalid_rows)
     service = BatchEvaluationService()
+    batch_id = results_store.new_batch_id()
 
     def stream():
         yield json.dumps({
             "type": "init",
+            "batch_id": batch_id,
             "total_records": total_records,
             "valid_records": len(valid_rows),
             "invalid_records": len(invalid_rows),
@@ -50,6 +54,8 @@ async def evaluate_batch(file: UploadFile = File(...)):
         for record in service.evaluate_rows(valid_rows):
             completed += 1
             records.append(record)
+            if record.result is not None:
+                results_store.save(record.result, batch_id=batch_id, row_number=record.row_number)
             yield json.dumps({
                 "type": "progress",
                 "completed": completed,
@@ -58,6 +64,6 @@ async def evaluate_batch(file: UploadFile = File(...)):
             }) + "\n"
 
         summary = service.compute_summary(records, total_records, len(invalid_rows))
-        yield json.dumps({"type": "summary", "summary": summary.model_dump()}) + "\n"
+        yield json.dumps({"type": "summary", "batch_id": batch_id, "summary": summary.model_dump()}) + "\n"
 
     return StreamingResponse(stream(), media_type="application/x-ndjson")

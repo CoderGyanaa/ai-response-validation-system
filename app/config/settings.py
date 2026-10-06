@@ -20,6 +20,9 @@ class Settings:
     VECTOR_DB_PATH: str = os.getenv("VECTOR_DB_PATH", "./data/chroma_store")
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
 
+    # Evaluation results store (M4 dashboard/report data source)
+    RESULTS_DB_PATH: str = os.getenv("RESULTS_DB_PATH", "./data/evaluation_results.db")
+
     # App config
     APP_ENV: str = os.getenv("APP_ENV", "development")
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")

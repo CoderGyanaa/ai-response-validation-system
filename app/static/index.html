@@ -3,25 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI Response Validation — Evaluation Dashboard</title>
+<title>AI Response Validation System — Evaluation Intelligence</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #12151B;
-    --panel: #181C23;
-    --panel-2: #1D222B;
-    --field: #1F242C;
-    --line: #2A2F39;
-    --line-bright: #3A4150;
-    --paper: #EDEBE4;
-    --muted: #8890A0;
-    --verified: #5FD3A5;
-    --flagged: #E8604C;
-    --partial: #E8B84C;
+    /* Clean Glassmorphism Theme */
+    --void: #E2E8F0;
+    --bg: radial-gradient(circle at 50% 0%, #F8FAFC 0%, #E2E8F0 100%);
+    --panel: rgba(255, 255, 255, 0.45);
+    --panel-2: rgba(255, 255, 255, 0.7);
+    --field: rgba(255, 255, 255, 0.85);
+    --line: rgba(255, 255, 255, 0.8);
+    --line-bright: rgba(255, 255, 255, 1);
+    --paper: #0F172A;
+    --muted: #64748B;
+    --cyan: #06B6D4;
+    --cyan-glow: rgba(6, 182, 212, 0.35);
+    --violet: #8B5CF6;
+    --violet-glow: rgba(139, 92, 246, 0.30);
+    --verified: #10B981;
+    --verified-glow: rgba(16, 185, 129, 0.30);
+    --partial: #F59E0B;
+    --partial-glow: rgba(245, 158, 11, 0.28);
+    --flagged: #EF4444;
+    --flagged-glow: rgba(239, 68, 68, 0.30);
+    
+    --glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.04);
+    --glass-blur: blur(20px);
   }
 
   * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
 
   body {
     margin: 0;
@@ -29,379 +43,582 @@
     color: var(--paper);
     font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
     line-height: 1.55;
-  }
-
-  .wrap {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 48px 24px 96px;
-  }
-
-  /* --- Masthead --- */
-  .masthead {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    border-bottom: 1px solid var(--line);
-    padding-bottom: 20px;
-    margin-bottom: 36px;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-  .masthead h1 {
-    font-family: "Fraunces", serif;
-    font-weight: 500;
-    font-size: 30px;
-    letter-spacing: -0.01em;
-    margin: 0 0 4px 0;
-  }
-  .masthead .sub { color: var(--muted); font-size: 14px; }
-  .status {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    color: var(--muted);
-    white-space: nowrap;
-    padding-bottom: 4px;
-  }
-  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
-  .status.busy .status-dot { background: var(--partial); animation: pulse 1.1s ease-in-out infinite; }
-  .status.done .status-dot { background: var(--verified); }
-  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
-  @media (prefers-reduced-motion: reduce) { .status.busy .status-dot { animation: none; } }
-
-  /* --- Form --- */
-  .field-group { margin-bottom: 22px; }
-  .field-label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px; }
-  .field-label .req { color: var(--flagged); }
-  textarea {
-    width: 100%;
-    background: var(--field);
-    border: 1px solid var(--line);
-    border-radius: 3px;
-    color: var(--paper);
-    font-family: inherit;
-    font-size: 15px;
-    padding: 12px 14px;
-    min-height: 68px;
-    resize: vertical;
-  }
-  textarea:focus { outline: 2px solid var(--verified); outline-offset: 1px; border-color: transparent; }
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-  @media (max-width: 560px) { .two-col { grid-template-columns: 1fr; } }
-
-  button.run {
-    background: var(--paper);
-    color: var(--bg);
-    border: none;
-    border-radius: 3px;
-    padding: 13px 26px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
-    transition: background 0.15s ease;
-  }
-  button.run:hover { background: #fff; }
-  button.run:disabled { background: var(--muted); cursor: not-allowed; }
-  button.run:focus-visible { outline: 2px solid var(--verified); outline-offset: 2px; }
-
-  .error-box {
-    display: none;
-    border: 1px solid var(--flagged);
-    color: var(--flagged);
-    padding: 12px 16px;
-    border-radius: 3px;
-    font-size: 14px;
-    margin-top: 16px;
-  }
-
-  /* --- Results shell --- */
-  #results { display: none; margin-top: 52px; animation: reveal 0.4s ease-out; }
-  @keyframes reveal { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-  @media (prefers-reduced-motion: reduce) { #results { animation: none; } }
-
-  .section-title {
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin: 40px 0 14px 0;
-  }
-  .section-title:first-of-type { margin-top: 0; }
-
-  /* ============ 1. HERO VERDICT ============ */
-  .hero {
-    border-radius: 10px;
-    border: 1px solid;
-    padding: 28px 30px;
     position: relative;
-    overflow: hidden;
-  }
-  .hero.pass    { background: linear-gradient(180deg, rgba(95,211,165,0.10), rgba(95,211,165,0.02)); border-color: var(--verified); }
-  .hero.partial { background: linear-gradient(180deg, rgba(232,184,76,0.10), rgba(232,184,76,0.02)); border-color: var(--partial); }
-  .hero.fail    { background: linear-gradient(180deg, rgba(232,96,76,0.10), rgba(232,96,76,0.02)); border-color: var(--flagged); }
-
-  .hero-top { display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
-  .hero-icon {
-    width: 56px; height: 56px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; border: 2px solid;
-  }
-  .hero-icon.pass { color: var(--verified); border-color: var(--verified); }
-  .hero-icon.partial { color: var(--partial); border-color: var(--partial); }
-  .hero-icon.fail { color: var(--flagged); border-color: var(--flagged); }
-
-  .hero-main { flex: 1; min-width: 220px; }
-  .hero-verdict-label {
-    font-family: "Fraunces", serif;
-    font-weight: 700;
-    font-size: 30px;
-    letter-spacing: 0.01em;
-    margin-bottom: 2px;
-  }
-  .hero-verdict-label.pass { color: var(--verified); }
-  .hero-verdict-label.partial { color: var(--partial); }
-  .hero-verdict-label.fail { color: var(--flagged); }
-  .hero-status-desc { font-size: 14px; color: var(--muted); }
-
-  .hero-score-block { text-align: right; flex-shrink: 0; }
-  .hero-score-num { font-family: "IBM Plex Mono", monospace; font-size: 38px; font-weight: 500; line-height: 1; }
-  .hero-score-label { font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.03em; }
-
-  .hero-summary {
-    margin-top: 18px;
-    padding-top: 18px;
-    border-top: 1px solid var(--line);
-    font-size: 14.5px;
-    line-height: 1.65;
+    min-height: 100vh;
   }
 
-  .hero-meta { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
-  .meta-chip {
-    font-size: 11.5px;
-    padding: 4px 10px;
-    border-radius: 12px;
-    border: 1px solid var(--line-bright);
-    color: var(--muted);
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
+  /* ============ Ambient animated background ============ */
+  .bg-fx {
+    position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none;
+    background: var(--bg);
   }
-  .meta-chip.on { color: var(--verified); border-color: var(--verified); }
-
-  /* ============ 2. SCORE OVERVIEW GRID ============ */
-  .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-  @media (max-width: 720px) { .metric-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 420px) { .metric-grid { grid-template-columns: 1fr; } }
-
-  .metric-tile {
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 16px;
-    background: var(--panel);
-    transition: border-color 0.15s ease, transform 0.15s ease;
+  .bg-aurora {
+    position: absolute; width: 140%; height: 140%; top: -20%; left: -20%;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(6,182,212,0.12), transparent 35%),
+      radial-gradient(circle at 80% 20%, rgba(139,92,246,0.12), transparent 40%),
+      radial-gradient(circle at 60% 80%, rgba(16,185,129,0.08), transparent 35%);
+    animation: aurora-drift 28s ease-in-out infinite alternate;
   }
-  .metric-tile:hover { border-color: var(--line-bright); transform: translateY(-1px); }
-  .metric-tile-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-  .metric-tile-label { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.02em; }
-  .ring { width: 40px; height: 40px; flex-shrink: 0; }
-  .metric-tile-score { font-family: "IBM Plex Mono", monospace; font-size: 22px; font-weight: 500; margin-bottom: 8px; }
-  .metric-tile-status { font-size: 12px; color: var(--muted); margin-top: 8px; }
-
-  /* --- Shared badges --- */
-  .badge {
-    font-size: 10.5px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase;
-    padding: 3px 9px; border-radius: 10px; border: 1px solid;
-    display: inline-flex; align-items: center; gap: 4px; width: fit-content;
+  .bg-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(15,23,42,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(15,23,42,0.03) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 50%, transparent 85%);
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 50%, transparent 85%);
   }
-
-  /* ============ 3. PIPELINE VISUALIZATION ============ */
-  .pipeline {
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 22px;
-    background: var(--panel);
-  }
-  .pipeline-row { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
-  .pipeline-node {
-    border: 1px solid var(--line-bright);
-    border-radius: 6px;
-    padding: 8px 14px;
-    font-size: 12.5px;
-    font-weight: 600;
-    background: var(--field);
-    text-align: center;
-  }
-  .pipeline-node.judges { display: flex; flex-direction: column; gap: 6px; }
-  .pipeline-node.judges .j { font-size: 11.5px; font-weight: 500; color: var(--muted); }
-  .pipeline-arrow { color: var(--muted); font-size: 16px; flex-shrink: 0; }
-  .pipeline-arrow.down { transform: rotate(90deg); }
-  .pipeline-col { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-  .pipeline-verdict-node { border-color: currentColor; font-weight: 700; }
-
-  /* ============ 4. WHY THIS VERDICT ============ */
-  .why-list { display: flex; flex-direction: column; gap: 14px; }
-  .why-group-label {
-    font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em;
-    display: flex; align-items: center; gap: 7px; margin-bottom: 8px;
-  }
-  .why-group-label.strength { color: var(--verified); }
-  .why-group-label.warning { color: var(--partial); }
-  .why-group-label.critical { color: var(--flagged); }
-  .why-item {
-    font-size: 13.5px;
-    color: var(--paper);
-    opacity: 0.9;
-    padding: 10px 14px;
-    border-radius: 6px;
-    background: var(--field);
-    margin-bottom: 6px;
-  }
-  .why-item:last-child { margin-bottom: 0; }
-
-  /* ============ Collapsible judge panels ============ */
-  .judge-panel {
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    margin-bottom: 12px;
-    overflow: hidden;
-  }
-  .judge-panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 16px 18px;
-    cursor: pointer;
-    user-select: none;
-    background: var(--panel);
-  }
-  .judge-panel-header:hover { background: var(--panel-2); }
-  .judge-panel-title { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; flex-wrap: wrap; }
-  .judge-panel-right { display: flex; align-items: center; gap: 12px; }
-  .judge-panel-score { font-family: "IBM Plex Mono", monospace; font-size: 15px; font-weight: 500; }
-  .chevron { transition: transform 0.2s ease; color: var(--muted); flex-shrink: 0; }
-  .judge-panel.open .chevron { transform: rotate(180deg); }
-  .judge-panel-body {
-    max-height: 0;
-    opacity: 0;
-    overflow: hidden;
-    transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
-    padding: 0 18px;
-  }
-  .judge-panel.open .judge-panel-body {
-    max-height: 2400px;
-    opacity: 1;
-    padding: 4px 18px 20px 18px;
+  @keyframes aurora-drift {
+    0%   { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(-3%, 2%) scale(1.06); }
   }
   @media (prefers-reduced-motion: reduce) {
-    .judge-panel-body, .chevron { transition: none; }
+    .bg-aurora { animation: none; }
   }
 
-  .meter { height: 6px; background: var(--field); border-radius: 3px; overflow: hidden; margin: 10px 0 14px 0; }
-  .meter-fill { height: 100%; border-radius: 3px; }
-  .judge-reason { font-size: 13.5px; color: var(--paper); opacity: 0.85; margin-bottom: 0; }
-
-  /* Claim / evidence flow (accuracy) */
-  .flow-block { margin-top: 16px; }
-  .flow-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 6px; }
-  .flow-arrow { text-align: center; color: var(--muted); font-size: 14px; margin: 6px 0; }
-  .flow-item {
-    font-family: "IBM Plex Mono", monospace;
-    font-size: 12.5px;
-    background: var(--field);
-    border-radius: 4px;
-    padding: 8px 12px;
-    margin-bottom: 4px;
+  /* ============ Sidebar Navigation ============ */
+  .topnav {
+    position: fixed; top: 0; left: 0; bottom: 0; width: 280px;
+    display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start;
+    gap: 32px; padding: 40px 24px;
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+    border-right: 1px solid var(--line);
+    z-index: 50; box-shadow: var(--glass-shadow);
   }
-  .flow-item.claim { font-family: inherit; font-style: italic; }
+  .topnav-left { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; font-size: 14px; width: 100%; }
+  .topnav-mark { 
+    width: 36px; height: 36px; border-radius: 10px; 
+    background: linear-gradient(135deg, var(--cyan), var(--violet)); 
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; 
+    box-shadow: 0 4px 14px rgba(6,182,212,0.3); 
+  }
+  .topnav-mark svg { width: 20px; height: 20px; color: #FFF; }
+  .topnav-product-block { display: flex; flex-direction: column; line-height: 1.3; }
+  .topnav-product { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+  .topnav-tagline { font-size: 11px; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600; }
+  .topnav-sep { display: none; }
+  .topnav-section { display: none; }
+  
+  .topnav-right { 
+    display: flex; flex-direction: column; align-items: flex-start; gap: 24px; width: 100%; 
+  }
+  .topnav-tabs { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+  .nav-btn {
+    background: transparent; color: var(--muted); border: 1px solid transparent; border-radius: 10px; 
+    padding: 14px 18px; font-size: 13.5px; font-weight: 600; font-family: inherit; cursor: pointer;
+    transition: all 0.2s ease; width: 100%; text-align: left;
+  }
+  .nav-btn:hover { color: var(--paper); background: rgba(255,255,255,0.5); transform: translateX(4px); }
+  .nav-btn:active { transform: translateX(2px); }
+  .nav-btn.active { color: var(--paper); background: var(--field); border-color: var(--line); box-shadow: 0 2px 10px rgba(15,23,42,0.03); }
+  .nav-btn.ghost { border-color: var(--line); background: var(--panel); text-align: center; }
+  .nav-btn.primary { background: linear-gradient(135deg, var(--cyan), var(--violet)); color: #FFF; border-color: transparent; text-align: center; box-shadow: 0 4px 14px var(--cyan-glow); }
+  
+  .topnav-status { margin-top: auto; display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--muted); font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; padding-top: 24px; border-top: 1px solid var(--line); width: 100%; }
+  .topnav-status .status-dot { background: var(--verified); box-shadow: 0 0 8px var(--verified-glow); animation: pulse-dot 2.2s ease-in-out infinite; width: 8px; height: 8px; border-radius: 50%; }
+  .topnav-updated { font-size: 11px; color: var(--muted); font-family: "IBM Plex Mono", monospace; width: 100%; }
 
-  /* Hallucination status banner */
+  /* ============ Main Content Wrapper (Made wider & fluid) ============ */
+  .wrap { 
+    max-width: 1600px; /* Expanded from 1080px to fit modern screens */
+    margin: 0 auto 0 280px; /* Aligns correctly alongside sidebar */
+    padding: 50px 48px 96px; 
+  }
+
+  /* Responsive logic for smaller screens */
+  @media (max-width: 1100px) {
+    .topnav { 
+      position: sticky; width: 100%; height: auto; flex-direction: column; align-items: stretch; 
+      padding: 20px 24px; border-right: none; border-bottom: 1px solid var(--line); gap: 20px;
+    }
+    .topnav-left { flex-direction: row; align-items: center; }
+    .topnav-right { flex-direction: column; gap: 16px; margin-top: 0; }
+    .topnav-tabs { flex-direction: row; flex-wrap: wrap; }
+    .nav-btn { width: auto; text-align: center; padding: 10px 16px; }
+    .nav-btn:hover { transform: translateY(-2px); }
+    .nav-btn:active { transform: translateY(0); }
+    .topnav-status { padding-top: 0; border-top: none; width: auto; margin-top: 0; justify-content: flex-end; }
+    .wrap { margin: 0 auto; padding: 32px 24px 96px; max-width: 100%; }
+  }
+
+  /* ============ Masthead ============ */
+  .masthead {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    border-bottom: 1px solid var(--line); padding-bottom: 24px; margin-bottom: 40px; flex-wrap: wrap; gap: 12px;
+  }
+  .masthead h1 { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 32px; letter-spacing: -0.02em; margin: 0 0 6px 0; color: var(--paper); }
+  .masthead .sub { color: var(--muted); font-size: 14.5px; font-weight: 500; }
+  .status { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); white-space: nowrap; padding-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); transition: background 0.2s ease; }
+  .status.busy .status-dot { background: var(--partial); box-shadow: 0 0 10px var(--partial-glow); animation: pulse-dot 1.1s ease-in-out infinite; }
+  .status.done .status-dot { background: var(--verified); box-shadow: 0 0 10px var(--verified-glow); }
+  @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* ============ Form Elements ============ */
+  .field-group { margin-bottom: 24px; }
+  .field-label { display: block; font-size: 12.5px; font-weight: 700; color: var(--muted); margin-bottom: 10px; letter-spacing: 0.02em; text-transform: uppercase; }
+  .field-label .req { color: var(--flagged); }
+  textarea {
+    width: 100%; background: var(--field); border: 1px solid var(--line); border-radius: 12px;
+    color: var(--paper); font-family: inherit; font-size: 15px; padding: 16px 18px; min-height: 80px; resize: vertical;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    transition: all 0.2s ease; box-shadow: inset 0 2px 4px rgba(15,23,42,0.02);
+  }
+  textarea:focus { outline: none; border-color: var(--cyan); background: #FFF; box-shadow: 0 0 0 4px var(--cyan-glow); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 600px) { .two-col { grid-template-columns: 1fr; gap: 16px; } }
+
+  button.run {
+    background: linear-gradient(135deg, var(--cyan), var(--violet));
+    color: #FFF; border: none; border-radius: 10px; padding: 15px 32px; font-size: 15px; font-weight: 700;
+    cursor: pointer; font-family: inherit; letter-spacing: 0.02em;
+    transition: all 0.2s ease; box-shadow: 0 6px 20px rgba(6,182,212,0.25);
+  }
+  button.run:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(6,182,212,0.35); }
+  button.run:active { transform: translateY(0); }
+  button.run:disabled { background: var(--field); color: var(--muted); cursor: not-allowed; box-shadow: none; transform: none; border: 1px solid var(--line); }
+
+  .error-box {
+    display: none; border: 1px solid rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.1); color: var(--flagged);
+    padding: 14px 18px; border-radius: 10px; font-size: 14.5px; margin-top: 20px; font-weight: 500;
+  }
+
+  /* ============ Processing stage visual ============ */
+  .process-stages {
+    display: none; margin-top: 24px; padding: 20px 24px; border: 1px solid var(--line);
+    border-radius: 12px; background: var(--panel); backdrop-filter: var(--glass-blur); box-shadow: var(--glass-shadow);
+  }
+  .process-stage {
+    display: flex; align-items: center; gap: 12px; padding: 8px 0; font-size: 14px; color: var(--muted);
+    font-weight: 500; opacity: 0.5; transition: all 0.3s ease;
+  }
+  .process-stage .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: all 0.3s ease; }
+  .process-stage.active { opacity: 1; color: var(--paper); font-weight: 600; transform: translateX(4px); }
+  .process-stage.active .dot { background: var(--cyan); box-shadow: 0 0 10px var(--cyan-glow); transform: scale(1.2); }
+  .process-stage.past { opacity: 0.7; color: var(--muted); }
+  .process-stage.past .dot { background: var(--verified); }
+
+  /* ============ Results Shell ============ */
+  #results { display: none; margin-top: 56px; }
+  @keyframes reveal { from { opacity: 0; transform: translateY(12px); filter: blur(4px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+  #results.in { animation: reveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+  .panel { border: 1px solid var(--line); border-radius: 12px; padding: 24px; margin-bottom: 24px; background: var(--panel); backdrop-filter: var(--glass-blur); box-shadow: var(--glass-shadow); }
+  .panel h3 { font-size: 12.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px; }
+
+  /* ============ Hero Verdict Card ============ */
+  .verdict-card {
+    border-radius: 16px; border: 1px solid; padding: 32px 36px; margin-bottom: 32px;
+    display: flex; align-items: center; gap: 28px; flex-wrap: wrap; position: relative; overflow: hidden;
+    backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); box-shadow: var(--glass-shadow);
+  }
+  .verdict-card.pass    { background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(16,185,129,0.08)); border-color: rgba(16,185,129,0.3); }
+  .verdict-card.partial { background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(245,158,11,0.08)); border-color: rgba(245,158,11,0.3); }
+  .verdict-card.fail    { background: linear-gradient(135deg, rgba(255,255,255,0.7), rgba(239,68,68,0.08)); border-color: rgba(239,68,68,0.3); }
+
+  .verdict-icon { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 2.5px solid; background: #FFF; }
+  .verdict-icon.pass    { color: var(--verified); border-color: var(--verified); box-shadow: 0 8px 24px rgba(16,185,129,0.2); }
+  .verdict-icon.partial { color: var(--partial);  border-color: var(--partial); box-shadow: 0 8px 24px rgba(245,158,11,0.2); }
+  .verdict-icon.fail    { color: var(--flagged);  border-color: var(--flagged); box-shadow: 0 8px 24px rgba(239,68,68,0.2); }
+
+  .verdict-main { flex: 1; min-width: 220px; }
+  .verdict-label { font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 30px; letter-spacing: -0.01em; margin-bottom: 6px; }
+  .verdict-label.pass    { color: var(--verified); }
+  .verdict-label.partial { color: var(--partial); }
+  .verdict-label.fail    { color: var(--flagged); }
+  .verdict-why { font-size: 15px; color: var(--muted); font-weight: 500; max-width: 60ch; line-height: 1.6; }
+
+  .verdict-score-block { text-align: right; flex-shrink: 0; background: #FFF; padding: 16px 24px; border-radius: 12px; border: 1px solid var(--line); box-shadow: 0 4px 12px rgba(15,23,42,0.03); }
+  .verdict-score-num { font-family: "IBM Plex Mono", monospace; font-size: 36px; font-weight: 700; line-height: 1; color: var(--paper); }
+  .verdict-score-label { font-size: 11px; color: var(--muted); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+
+  /* ============ Metric Grids ============ */
+  .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+  @media (max-width: 768px) { .metric-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 480px) { .metric-grid { grid-template-columns: 1fr; } }
+  .metric-tile { border: 1px solid var(--line); border-radius: 12px; padding: 20px; background: var(--panel); backdrop-filter: var(--glass-blur); box-shadow: var(--glass-shadow); transition: all 0.2s ease; }
+  .metric-tile:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(15,23,42,0.08); border-color: #FFF; }
+  .metric-tile-label { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px; }
+  .metric-tile-score { font-family: "IBM Plex Mono", monospace; font-size: 28px; font-weight: 700; margin-bottom: 12px; color: var(--paper); }
+
+  .badge {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 4px 10px;
+    border-radius: 12px; border: 1px solid; display: inline-flex; align-items: center; gap: 6px; width: fit-content;
+    background: #FFF;
+  }
+
+  /* ============ General Panels (Pipeline, Why, Judges) ============ */
+  .pipeline { border: 1px solid var(--line); border-radius: 12px; padding: 28px; background: var(--panel); backdrop-filter: var(--glass-blur); box-shadow: var(--glass-shadow); margin-bottom: 24px; }
+  .pipeline-node { border: 1px solid var(--line-bright); border-radius: 10px; padding: 12px 18px; font-size: 13.5px; font-weight: 600; background: #FFF; text-align: center; box-shadow: 0 2px 8px rgba(15,23,42,0.02); }
+  .pipeline-node.judges { display: flex; flex-direction: column; gap: 8px; }
+  .pipeline-node.judges .j { font-size: 12.5px; font-weight: 500; color: var(--muted); }
+  .pipeline-arrow { color: var(--muted); font-size: 18px; flex-shrink: 0; font-weight: 700; }
+  .pipeline-col { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .pipeline-verdict-node { border-width: 2px; font-weight: 700; background: #FFF; }
+
+  .why-group-label { font-size: 13px; font-weight: 700; letter-spacing: 0.03em; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; text-transform: uppercase; }
+  .why-group-label.strength { color: var(--verified); }
+  .why-group-label.warning  { color: var(--partial); }
+  .why-group-label.critical { color: var(--flagged); }
+  .why-item { font-size: 14.5px; color: var(--paper); padding: 12px 18px; border-radius: 10px; background: #FFF; border: 1px solid var(--line); margin-bottom: 8px; box-shadow: 0 2px 6px rgba(15,23,42,0.02); }
+
+  .judge-panel { border: 1px solid var(--line); border-radius: 12px; margin-bottom: 16px; overflow: hidden; background: var(--panel); backdrop-filter: var(--glass-blur); box-shadow: var(--glass-shadow); }
+  .judge-panel-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px;
+    cursor: pointer; user-select: none; transition: background 0.2s ease;
+  }
+  .judge-panel-header:hover { background: var(--panel-2); }
+  .judge-panel-title { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 700; flex-wrap: wrap; color: var(--paper); }
+  .judge-panel-eyebrow { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 700; background: #FFF; padding: 4px 10px; border-radius: 8px; border: 1px solid var(--line); }
+  .judge-panel-right { display: flex; align-items: center; gap: 16px; }
+  .judge-panel-score { font-family: "IBM Plex Mono", monospace; font-size: 18px; font-weight: 700; background: #FFF; padding: 4px 12px; border-radius: 8px; border: 1px solid var(--line); }
+  .chevron { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); color: var(--muted); }
+  .judge-panel.open .chevron { transform: rotate(180deg); }
+  .judge-panel-body { max-height: 0; opacity: 0; overflow: hidden; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 0 24px; }
+  .judge-panel.open .judge-panel-body { max-height: 2600px; opacity: 1; padding: 4px 24px 28px 24px; }
+
+  .meter { height: 8px; background: rgba(15,23,42,0.05); border-radius: 4px; overflow: hidden; margin: 12px 0 20px 0; border: 1px solid rgba(255,255,255,0.5); }
+  .meter-fill { height: 100%; border-radius: 4px; width: 0; transition: width 0.8s cubic-bezier(.2,.8,.2,1); }
+  
+  .judge-reason { font-size: 14.5px; color: var(--muted); font-weight: 500; line-height: 1.6; margin-bottom: 0; }
+
+  .flow-block { margin-top: 20px; }
+  .flow-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 8px; font-weight: 700; }
+  .flow-arrow { text-align: center; color: var(--muted); font-size: 16px; margin: 8px 0; font-weight: 700; }
+  .flow-item { font-family: "IBM Plex Mono", monospace; font-size: 13.5px; background: #FFF; border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; margin-bottom: 6px; box-shadow: 0 2px 6px rgba(15,23,42,0.02); }
+  .flow-item.claim { font-family: inherit; font-style: italic; font-weight: 500; color: var(--paper); }
+
   .halluc-status-banner {
-    display: flex; align-items: center; gap: 10px;
-    padding: 12px 16px; border-radius: 6px; border: 1px solid;
-    font-weight: 700; font-size: 14px; letter-spacing: 0.02em;
-    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-radius: 10px; border: 1px solid;
+    font-weight: 700; font-size: 14px; letter-spacing: 0.02em; margin-bottom: 20px; text-transform: uppercase; background: #FFF; box-shadow: 0 4px 12px rgba(15,23,42,0.03);
   }
-  .halluc-status-banner.none { color: var(--verified); border-color: var(--verified); background: rgba(95,211,165,0.06); }
-  .halluc-status-banner.partial { color: var(--partial); border-color: var(--partial); background: rgba(232,184,76,0.06); }
-  .halluc-status-banner.full { color: var(--flagged); border-color: var(--flagged); background: rgba(232,96,76,0.06); }
+  .halluc-status-banner.none    { color: var(--verified); border-color: rgba(16,185,129,0.3); }
+  .halluc-status-banner.partial { color: var(--partial);  border-color: rgba(245,158,11,0.3); }
+  .halluc-status-banner.full    { color: var(--flagged);  border-color: rgba(239,68,68,0.3); }
 
-  .claim-card { border-radius: 6px; border: 1px solid; padding: 14px 16px; margin-bottom: 12px; }
-  .claim-card:last-child { margin-bottom: 0; }
-  .claim-card.contradicted { border-color: var(--flagged); background: rgba(232,96,76,0.05); }
-  .claim-card.unverifiable { border-color: var(--partial); background: rgba(232,184,76,0.05); }
-  .claim-card.supported { border-color: var(--verified); background: rgba(95,211,165,0.05); }
-  .claim-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
-  .claim-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 4px; }
-  .claim-text { font-size: 14px; font-weight: 600; font-style: italic; }
-  .claim-reason { font-size: 13px; color: var(--paper); opacity: 0.85; margin: 8px 0; }
-  .claim-evidence-item {
-    font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--paper);
-    background: var(--field); border-radius: 3px; padding: 7px 10px; margin-top: 4px;
+  .claim-card { border-radius: 10px; border: 1px solid; padding: 18px 20px; margin-bottom: 16px; background: #FFF; box-shadow: 0 4px 12px rgba(15,23,42,0.03); }
+  .claim-card.contradicted { border-color: rgba(239,68,68,0.4); border-left: 4px solid var(--flagged); }
+  .claim-card.unverifiable { border-color: rgba(245,158,11,0.4); border-left: 4px solid var(--partial); }
+  .claim-card.supported    { border-color: rgba(16,185,129,0.4); border-left: 4px solid var(--verified); }
+  
+  .claim-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .claim-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 6px; font-weight: 700; }
+  .claim-text { font-size: 15px; font-weight: 600; font-style: italic; color: var(--paper); }
+  .claim-reason { font-size: 14px; color: var(--muted); font-weight: 500; margin: 10px 0; }
+  .claim-evidence-item { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--muted); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; margin-top: 6px; }
+
+  .empty-state { display: flex; align-items: center; gap: 10px; color: var(--verified); font-size: 15px; font-weight: 600; padding: 16px 20px; border-radius: 10px; background: #FFF; border: 1px solid rgba(16,185,129,0.3); box-shadow: 0 4px 12px rgba(16,185,129,0.05); }
+
+  .source-card { display: flex; gap: 12px; border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; font-size: 14px; color: var(--muted); background: #FFF; box-shadow: 0 2px 6px rgba(15,23,42,0.02); }
+  .source-idx { font-family: "IBM Plex Mono", monospace; color: var(--paper); flex-shrink: 0; font-weight: 700; background: var(--bg); padding: 2px 8px; border-radius: 6px; border: 1px solid var(--line); }
+
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 768px) { .compare-grid { grid-template-columns: 1fr; } }
+  .compare-col { border: 1px solid var(--line); border-radius: 12px; padding: 24px; background: var(--panel); backdrop-filter: var(--glass-blur); box-shadow: var(--glass-shadow); }
+  .compare-col-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 16px; font-weight: 700; background: #FFF; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); display: inline-block; }
+  .compare-body { font-size: 15px; line-height: 1.7; color: var(--paper); }
+  mark.flag { background: rgba(239,68,68,0.1); color: var(--flagged); padding: 0 4px; border-radius: 4px; font-weight: 600; text-decoration: underline wavy var(--flagged); text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
+
+  .section-title { font-size: 13.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 48px 0 20px 0; }
+  .section-title:first-of-type { margin-top: 0; }
+
+  /* ============ Dashboard hero ============ */
+  .dash-hero {
+    margin-bottom: 40px; display: flex; align-items: center; justify-content: space-between; gap: 32px;
+    flex-wrap: wrap; padding: 40px; border: 1px solid var(--line); border-radius: 16px;
+    background: radial-gradient(ellipse 100% 100% at 100% 0%, rgba(139,92,246,0.08), transparent 60%), var(--panel);
+    backdrop-filter: var(--glass-blur); box-shadow: var(--glass-shadow); position: relative; overflow: hidden;
   }
-
-  .empty-state {
-    display: flex; align-items: center; gap: 8px;
-    color: var(--verified); font-size: 14px; font-weight: 600;
-    padding: 12px 14px; border-radius: 6px; background: rgba(95,211,165,0.06); border: 1px solid var(--verified);
+  .dash-hero-text h2 {
+    font-family: "Space Grotesk", sans-serif; font-weight: 700; font-size: 32px; margin: 0 0 10px 0;
+    background: linear-gradient(90deg, var(--paper), var(--cyan)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
   }
+  .dash-hero-text p { color: var(--muted); font-size: 15.5px; max-width: 54ch; margin: 0 0 20px 0; font-weight: 500; }
+  .dash-hero-meta { display: flex; gap: 24px; flex-wrap: wrap; font-size: 13px; color: var(--muted); background: #FFF; padding: 12px 20px; border-radius: 10px; border: 1px solid var(--line); }
+  .dash-hero-meta b { color: var(--paper); font-family: "IBM Plex Mono", monospace; font-weight: 700; }
 
-  /* Completeness aspects */
-  .aspect-list { list-style: none; padding: 0; margin: 0; }
-  .aspect-list li { display: flex; align-items: flex-start; gap: 8px; font-size: 13.5px; padding: 5px 0; }
-  .aspect-list.missing li { color: var(--partial); }
-  .aspect-list.addressed li { color: var(--verified); }
-  .aspect-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 14px; }
-  @media (max-width: 560px) { .aspect-cols { grid-template-columns: 1fr; } }
-  .aspect-col-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 8px; font-weight: 700; }
+  .hero-pulse-wrap { width: 110px; height: 110px; flex-shrink: 0; position: relative; }
+  .hero-pulse-wrap svg { position: absolute; inset: 0; }
+  .pulse-ring { fill: none; stroke: var(--cyan); stroke-width: 2; opacity: 0; transform-origin: center; animation: pulse-ring-anim 3s ease-out infinite; }
+  .pulse-ring.r2 { stroke: var(--violet); animation-delay: 1s; }
+  .pulse-ring.r3 { stroke: var(--verified); animation-delay: 2s; }
+  @keyframes pulse-ring-anim { 0% { opacity: 0.8; transform: scale(0.4); } 100% { opacity: 0; transform: scale(1.2); } }
+  .hero-pulse-core { fill: url(#coreGrad); }
 
-  /* Evidence explorer */
-  .source-grid { display: grid; gap: 10px; }
-  .source-card {
-    display: flex; gap: 10px; border: 1px solid var(--line); border-radius: 6px;
-    padding: 10px 14px; font-size: 13px; color: var(--muted); background: var(--field);
+  /* ============ KPI cards ============ */
+  .kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-bottom: 40px; }
+  @media (max-width: 1300px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 700px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+
+  .kpi-card {
+    border: 1px solid var(--line); border-radius: 14px; padding: 20px;
+    background: #FFF; backdrop-filter: var(--glass-blur);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 4px 12px rgba(15,23,42,0.02);
+    position: relative; overflow: hidden;
   }
-  .source-idx { font-family: "IBM Plex Mono", monospace; color: var(--paper); flex-shrink: 0; font-weight: 600; }
+  .kpi-card:hover { transform: translateY(-4px); border-color: #FFF; box-shadow: 0 16px 40px rgba(15,23,42,0.08); }
+  .kpi-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+  .kpi-card-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+  .kpi-card-icon { width: 18px; height: 18px; color: var(--muted); opacity: 0.8; }
+  .kpi-card-value { font-family: "IBM Plex Mono", monospace; font-size: 32px; font-weight: 700; line-height: 1; margin-bottom: 8px; color: var(--paper); }
+  .kpi-card-sub { font-size: 12px; color: var(--muted); font-weight: 500; }
 
-  /* Response vs evidence */
-  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  @media (max-width: 640px) { .compare-grid { grid-template-columns: 1fr; } }
-  .compare-col { border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; }
-  .compare-col-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 10px; font-weight: 700; }
-  .compare-body { font-size: 14px; line-height: 1.65; }
-  mark.flag {
-    background: none; color: inherit;
-    text-decoration: underline wavy var(--flagged);
-    text-decoration-thickness: 1.5px; text-underline-offset: 3px;
+  /* ============ Quality rings ============ */
+  .quality-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 40px; }
+  @media (max-width: 1100px) { .quality-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 600px) { .quality-grid { grid-template-columns: repeat(2, 1fr); } }
+  .quality-card { border: 1px solid var(--line); border-radius: 14px; padding: 24px 20px; text-align: center; background: var(--panel); backdrop-filter: var(--glass-blur); box-shadow: var(--glass-shadow); transition: border-color 0.2s ease; }
+  .quality-card:hover { border-color: #FFF; background: #FFF; }
+  .quality-ring-wrap { position: relative; width: 96px; height: 96px; margin: 0 auto 16px; }
+  .quality-ring-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: "IBM Plex Mono", monospace; font-size: 20px; font-weight: 700; color: var(--paper); }
+  
+  /* ============ Dash panels ============ */
+  .dash-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 40px; }
+  @media (max-width: 900px) { .dash-two-col { grid-template-columns: 1fr; } }
+  .dash-panel { border: 1px solid var(--line); border-radius: 16px; padding: 28px; background: var(--panel); backdrop-filter: var(--glass-blur); box-shadow: var(--glass-shadow); position: relative; overflow: hidden; }
+  
+  .halluc-panel { border-color: rgba(239,68,68,0.2); background: linear-gradient(180deg, var(--panel), rgba(239,68,68,0.02)); }
+  .completeness-panel { border-color: rgba(139,92,246,0.2); background: linear-gradient(180deg, var(--panel), rgba(139,92,246,0.02)); }
+
+  /* ============ Tables ============ */
+  .dash-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13.5px; min-width: 800px; background: #FFF; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); box-shadow: 0 4px 12px rgba(15,23,42,0.02); }
+  .dash-table th {
+    text-align: left; padding: 16px 20px; color: var(--muted); border-bottom: 1px solid var(--line);
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; background: var(--bg); font-weight: 700;
   }
-
-  /* Score guide */
-  .score-guide {
-    display: flex; gap: 18px; flex-wrap: wrap;
-    font-size: 12.5px; color: var(--muted);
-    border-top: 1px solid var(--line); margin-top: 40px; padding-top: 16px;
+  .dash-table td { padding: 16px 20px; border-bottom: 1px solid var(--line); vertical-align: middle; color: var(--paper); }
+  .dash-table tr { transition: background 0.15s ease; }
+  .dash-table tr:hover td { background: var(--bg); }
+  .dash-table .q-cell { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+  .score-pill {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 48px; padding: 4px 10px;
+    border-radius: 8px; font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 700;
+    background: #FFF; border: 1px solid var(--line); box-shadow: 0 2px 4px rgba(15,23,42,0.02);
   }
-  .score-guide-item { display: flex; align-items: center; gap: 6px; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .table-view-btn {
+    background: #FFF; border: 1px solid var(--line); color: var(--paper); border-radius: 8px;
+    padding: 6px 14px; font-size: 12.5px; cursor: pointer; font-family: inherit; font-weight: 600; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(15,23,42,0.02);
+  }
+  .table-view-btn:hover { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 4px 8px rgba(6,182,212,0.1); }
+  .batch-id-chip { font-family: "IBM Plex Mono", monospace; font-size: 12px; padding: 4px 10px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); font-weight: 600; color: var(--paper); }
 
-  .suggestion-list { margin: 0; padding-left: 18px; font-size: 14px; }
-  .suggestion-list li { margin-bottom: 6px; }
+  /* Dropzone */
+  .dropzone {
+    position: relative; border: 2px dashed var(--line-bright); border-radius: 16px; padding: 50px 32px;
+    text-align: center; background: #FFF; transition: all 0.2s ease; box-shadow: 0 4px 20px rgba(15,23,42,0.03); cursor: pointer;
+  }
+  .dropzone:hover, .dropzone.drag { border-color: var(--cyan); background: rgba(6,182,212,0.03); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(6,182,212,0.1); }
+  .dropzone-icon { width: 48px; height: 48px; margin: 0 auto 16px; color: var(--cyan); }
+  .dropzone-text { font-size: 17px; font-weight: 700; margin-bottom: 8px; color: var(--paper); }
+  .dropzone-link { color: var(--cyan); text-decoration: none; }
+  .dropzone-meta { font-size: 13.5px; color: var(--muted); font-weight: 500; }
+  .dropzone-meta code { background: var(--bg); padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line); color: var(--paper); font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+
+  /* Helper Utility Colors / Display */
+  .donut-arc { transition: stroke-width 0.15s ease, opacity 0.15s ease; cursor: pointer; }
+  .donut-arc.dim { opacity: 0.35; }
+  .donut-arc.hi { stroke-width: 22; }
+  .donut-row { display: flex; align-items: center; gap: 32px; flex-wrap: wrap; }
+  .donut-legend { display: flex; flex-direction: column; gap: 12px; font-size: 14px; font-weight: 500; }
+  .donut-legend-item { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 6px 10px; margin: -6px -10px; border-radius: 8px; transition: all 0.15s ease; }
+  .donut-legend-item:hover, .donut-legend-item.hi { background: #FFF; box-shadow: 0 2px 8px rgba(15,23,42,0.03); }
+  
+  .dist-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 13.5px; }
+  .dist-label { width: 80px; flex-shrink: 0; color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 12.5px; font-weight: 600; }
+  .dist-bar-track { flex: 1; height: 14px; background: rgba(15,23,42,0.05); border-radius: 7px; overflow: hidden; border: 1px solid rgba(255,255,255,0.5); }
+  .dist-bar-fill { height: 100%; border-radius: 7px; width: 0; transition: width 0.9s cubic-bezier(.2,.8,.2,1); }
+  
+  .filter-bar { display: flex; align-items: flex-end; gap: 20px; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 14px; padding: 24px; margin-bottom: 40px; background: var(--panel); backdrop-filter: var(--glass-blur); box-shadow: var(--glass-shadow); }
+  .filter-field label { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 700; margin-bottom: 8px; display: block; }
+  .filter-field select, .filter-field input { background: #FFF; border: 1px solid var(--line); border-radius: 8px; color: var(--paper); font-family: inherit; font-size: 14px; padding: 10px 14px; transition: all 0.2s ease; box-shadow: inset 0 2px 4px rgba(15,23,42,0.01); min-width: 150px; }
+  .filter-field select:focus, .filter-field input:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px var(--cyan-glow); }
 
   .icon { display: inline-block; vertical-align: middle; }
 </style>
 </head>
 <body>
 
+<div class="bg-fx" aria-hidden="true"><div class="bg-aurora"></div><div class="bg-grid"></div></div>
+
+<nav class="topnav" id="topnav" aria-label="Main Navigation">
+  <div class="topnav-left">
+    <div style="display:flex; align-items:center; gap: 12px;">
+      <div class="topnav-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/><circle cx="12" cy="12" r="3"/></svg></div>
+      <div class="topnav-product-block">
+        <span class="topnav-product">AI Response Validation</span>
+        <span class="topnav-tagline">Evaluation Intelligence</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="topnav-right">
+    <div class="topnav-tabs" role="tablist" aria-label="Primary">
+      <button class="nav-btn" id="tabDashboard" role="tab" aria-selected="false" onclick="switchView('dashboard')">Dashboard</button>
+      <button class="nav-btn" id="tabSingle" role="tab" aria-selected="false" onclick="switchView('single')">Single Evaluation</button>
+      <button class="nav-btn" id="tabBatch" role="tab" aria-selected="false" onclick="switchView('batch')">Batch Evaluation</button>
+      <button class="nav-btn" id="tabRecords" role="tab" aria-selected="false" onclick="switchView('records')">Evaluation Records</button>
+    </div>
+    
+    <div style="display:flex; flex-direction:column; gap:12px; width:100%; margin-top:16px;">
+      <button class="nav-btn ghost" id="refreshBtn" style="display:none;" onclick="loadDashboard()">Refresh Data</button>
+    </div>
+    
+    <div class="topnav-status" id="topnavStatus">
+      <div style="display:flex; align-items:center; gap: 8px;">
+        <span class="status-dot" id="sysStatusDot"></span><span id="sysStatusText">System Online</span>
+      </div>
+      <span class="topnav-updated" id="topnavUpdated" style="display:none;"></span>
+    </div>
+  </div>
+</nav>
+
 <div class="wrap">
 
+<div id="view-dashboard" style="display:none;">
+  <div class="dash-hero">
+    <div class="dash-hero-text">
+      <h2>AI Evaluation Intelligence</h2>
+      <p>Measure response quality, detect hallucinations, and understand AI reliability.</p>
+      <div class="dash-hero-meta">
+        <span>Evaluations tracked: <b id="dashHeroCount">—</b></span>
+        <span>Status: <b id="dashHeroStatus">—</b></span>
+        <span>Updated: <b id="dashHeroUpdated">—</b></span>
+      </div>
+    </div>
+    <div class="hero-pulse-wrap" aria-hidden="true">
+      <svg viewBox="0 0 100 100">
+        <defs>
+          <radialGradient id="coreGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#06B6D4"/>
+            <stop offset="100%" stop-color="#8B5CF6"/>
+          </radialGradient>
+        </defs>
+        <circle class="pulse-ring r1" cx="50" cy="50" r="30"/>
+        <circle class="pulse-ring r2" cx="50" cy="50" r="30"/>
+        <circle class="pulse-ring r3" cx="50" cy="50" r="30"/>
+        <circle class="hero-pulse-core" cx="50" cy="50" r="12"/>
+      </svg>
+    </div>
+  </div>
+
+  <div id="dashLoading" style="padding: 40px 20px; text-align: center; color: var(--muted); font-size: 15px; font-weight: 500; border: 2px dashed var(--line); border-radius: 12px; background: #FFF;">Loading dashboard…</div>
+  
+  <div id="dashError" style="display:none; flex-direction: column; gap: 16px; align-items: center; padding: 40px 20px; text-align: center; color: var(--flagged); font-size: 15px; font-weight: 600; border: 2px dashed rgba(239,68,68,0.4); border-radius: 12px; background: rgba(239,68,68,0.05);">
+    <span id="dashErrorText">Could not reach the evaluation API.</span>
+    <button class="nav-btn ghost" style="width: auto;" onclick="loadDashboard()">Retry</button>
+  </div>
+  
+  <div id="dashEmpty" style="display:none; padding: 40px 20px; text-align: center; color: var(--muted); font-size: 15px; font-weight: 500; border: 2px dashed var(--line); border-radius: 12px; background: #FFF;">No evaluations yet — run a single evaluation or upload a batch CSV to populate the dashboard.</div>
+
+  <div id="dashContent" style="display:none;">
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <div class="section-title">Quality scores</div>
+    <div class="quality-grid" id="qualityGrid"></div>
+
+    <div class="dash-two-col">
+      <div class="dash-panel">
+        <div class="section-title" style="margin-top:0;">Verdict distribution</div>
+        <div class="donut-row" id="verdictDonutRow"></div>
+      </div>
+      <div class="dash-panel">
+        <div class="section-title" style="margin-top:0;">Score distribution</div>
+        <div id="scoreDistribution"></div>
+      </div>
+    </div>
+
+    <div class="dash-two-col">
+      <div class="dash-panel halluc-panel">
+        <div class="section-title" style="margin-top:0;">Hallucination intelligence</div>
+        <div id="hallucSection"></div>
+      </div>
+      <div class="dash-panel completeness-panel">
+        <div class="section-title" style="margin-top:0;">Completeness analysis</div>
+        <div id="completenessSection"></div>
+      </div>
+    </div>
+
+    <div class="section-title">AI reliability issues</div>
+    <div class="pipeline" id="topIssuesPanel"></div>
+  </div>
+</div>
+<!-- /view-dashboard -->
+
+
+<div id="view-records" style="display:none;">
   <div class="masthead">
     <div>
-      <h1>Response Validation</h1>
-      <div class="sub">Hallucination detection — Infosys Springboard, Milestone 1, 2 &amp; 3</div>
+      <h1>Evaluation Records</h1>
+      <div class="sub">Browse history, filter results, and view batch exports</div>
+    </div>
+  </div>
+
+  <div class="section-title" style="margin-top:0;">Batch history</div>
+  <div class="pipeline" style="overflow-x:auto;padding:24px;" id="batchHistoryWrap">
+    <table class="dash-table" id="batchHistoryTable">
+      <thead>
+        <tr>
+          <th>Batch ID</th><th>Date</th><th>Stored records</th><th>Pass</th><th>Needs Improvement</th><th>Fail</th><th>Avg score</th><th>Status</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="batchHistoryBody"></tbody>
+    </table>
+    <div id="batchHistoryEmpty" style="display:none; padding: 32px 16px; text-align: center; font-weight: 500; color: var(--muted);">No batch evaluations yet.</div>
+  </div>
+
+  <div class="section-title">Filters</div>
+  <div class="filter-bar">
+    <div class="filter-field">
+      <label for="filterVerdict">Verdict</label>
+      <select id="filterVerdict">
+        <option value="">All</option>
+        <option value="PASS">Pass</option>
+        <option value="PARTIAL">Needs Improvement</option>
+        <option value="FAIL">Fail</option>
+      </select>
+    </div>
+    <div class="filter-field">
+      <label for="filterBatch">Batch</label>
+      <select id="filterBatch"><option value="">All batches</option></select>
+    </div>
+    <div class="filter-field">
+      <label for="filterMinScore">Min score</label>
+      <input type="number" id="filterMinScore" min="0" max="1" step="0.05" placeholder="0.00">
+    </div>
+    <div class="filter-field">
+      <label for="filterMaxScore">Max score</label>
+      <input type="number" id="filterMaxScore" min="0" max="1" step="0.05" placeholder="1.00">
+    </div>
+    <div style="display: flex; gap: 12px; margin-left: auto;">
+      <button class="nav-btn primary" style="width:auto;" onclick="applyFilters()">Apply Filters</button>
+      <button class="nav-btn ghost" style="width:auto;" onclick="resetFilters()">Reset</button>
+    </div>
+  </div>
+
+  <div class="section-title">Evaluation records</div>
+  <div class="pipeline" style="overflow-x:auto;padding:24px;">
+    <table class="dash-table" id="recordsTable">
+      <thead>
+        <tr>
+          <th>Question</th><th>Verdict</th><th>Overall</th><th>Relevance</th><th>Accuracy</th><th>Hallucination</th><th>Completeness</th><th>Batch</th><th>Date</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="recordsTableBody"></tbody>
+    </table>
+    <div id="recordsEmpty" style="display:none; padding: 32px 16px; text-align: center; font-weight: 500; color: var(--muted);">No results matching the current filters.</div>
+  </div>
+  <div id="recordsPagination" style="display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 24px; font-size: 14px; font-weight: 600; color: var(--paper);"></div>
+</div>
+<!-- /view-records -->
+
+
+<div id="view-single" style="display:none;">
+  <div class="masthead">
+    <div>
+      <h1>Single Evaluation</h1>
+      <div class="sub">Run an immediate hallucination detection trace for a single response</div>
     </div>
     <div class="status" id="status"><span class="status-dot"></span><span id="statusText">ready</span></div>
   </div>
@@ -430,116 +647,119 @@
   <button class="run" id="submitBtn" onclick="runEvaluation()">Run verification</button>
   <div class="error-box" id="errorBox"></div>
 
-  <div id="results">
+  <div class="process-stages" id="processStages" aria-live="polite">
+    <div class="process-stage" data-stage="retrieve"><span class="dot"></span>Retrieving evidence</div>
+    <div class="process-stage" data-stage="relevance"><span class="dot"></span>Analyzing relevance</div>
+    <div class="process-stage" data-stage="accuracy"><span class="dot"></span>Checking accuracy</div>
+    <div class="process-stage" data-stage="hallucination"><span class="dot"></span>Detecting hallucinations</div>
+    <div class="process-stage" data-stage="completeness"><span class="dot"></span>Checking completeness</div>
+    <div class="process-stage" data-stage="verdict"><span class="dot"></span>Generating verdict</div>
+  </div>
 
-    <!-- 1. HERO VERDICT -->
-    <div class="hero" id="hero">
-      <div class="hero-top">
-        <div class="hero-icon" id="heroIcon"></div>
-        <div class="hero-main">
-          <div class="hero-verdict-label" id="heroVerdictLabel"></div>
-          <div class="hero-status-desc" id="heroStatusDesc"></div>
-        </div>
-        <div class="hero-score-block">
-          <div class="hero-score-num" id="heroScoreNum"></div>
-          <div class="hero-score-label">weighted overall score</div>
-        </div>
+  <div id="results">
+    <div class="verdict-card" id="hero">
+      <div class="verdict-icon" id="heroIcon"></div>
+      <div class="verdict-main">
+        <div class="verdict-label" id="heroVerdictLabel"></div>
+        <div class="verdict-why" id="heroStatusDesc"></div>
       </div>
-      <div class="hero-summary" id="heroSummary"></div>
-      <div class="hero-meta" id="heroMeta"></div>
+      <div class="verdict-score-block">
+        <div class="verdict-score-num" id="heroScoreNum"></div>
+        <div class="verdict-score-label">weighted overall score</div>
+      </div>
+      <div class="hero-summary" id="heroSummary" style="flex-basis:100%;font-size:15px;opacity:0.85;font-weight:500;"></div>
+      <div class="hero-meta" id="heroMeta" style="flex-basis:100%;"></div>
     </div>
 
-    <!-- 2. SCORE OVERVIEW -->
     <div class="section-title">Evaluation health — score overview</div>
     <div class="metric-grid" id="metricGrid"></div>
 
-    <!-- 3. PIPELINE VISUALIZATION -->
     <div class="section-title">How this result was produced</div>
     <div class="pipeline" id="pipeline"></div>
 
-    <!-- 4. WHY THIS VERDICT -->
     <div class="section-title">Why this verdict?</div>
-    <div class="pipeline" style="padding:22px;" id="whySection"></div>
+    <div class="pipeline" style="padding:32px;" id="whySection"></div>
 
-    <!-- 5-8. Detailed judge panels -->
-    <div class="section-title">Judge findings — detail</div>
+    <div class="section-title">Judge findings — forensic analysis</div>
     <div id="judgePanels"></div>
 
-    <!-- 9. Evidence explorer -->
     <div class="section-title" id="evidenceSectionTitle" style="display:none;">Evidence consulted</div>
     <div class="pipeline" id="evidencePanel" style="display:none;">
       <div class="source-grid" id="evidenceList"></div>
     </div>
 
-    <!-- 10. Response vs evidence -->
     <div class="section-title" id="compareSectionTitle" style="display:none;">Response vs. retrieved evidence</div>
     <div class="compare-grid" id="compareGrid" style="display:none;"></div>
 
-    <!-- Improvement suggestions -->
     <div class="section-title" id="suggestionsSectionTitle" style="display:none;">Improvement suggestions</div>
     <div class="pipeline" id="suggestionsPanel" style="display:none;">
-      <ul class="suggestion-list" id="suggestionsList"></ul>
+      <ul class="suggestion-list" id="suggestionsList" style="margin:0; padding-left:20px; font-size:15px; line-height:1.6; font-weight:500;"></ul>
     </div>
 
-    <!-- 11. Score guide -->
-    <div class="score-guide">
-      <span class="score-guide-item"><span class="dot" style="background:var(--verified);"></span>0.80–1.00 → Pass</span>
-      <span class="score-guide-item"><span class="dot" style="background:var(--partial);"></span>0.50–0.79 → Needs Improvement</span>
-      <span class="score-guide-item"><span class="dot" style="background:var(--flagged);"></span>0.00–0.49 → Fail</span>
+    <div style="display: flex; gap: 24px; flex-wrap: wrap; font-size: 13.5px; color: var(--muted); border-top: 1px solid var(--line); margin-top: 48px; padding-top: 24px; font-weight: 600;">
+      <span style="display: flex; align-items: center; gap: 8px;"><span style="width:10px;height:10px;border-radius:50%;background:var(--verified);"></span>0.80–1.00 → Pass</span>
+      <span style="display: flex; align-items: center; gap: 8px;"><span style="width:10px;height:10px;border-radius:50%;background:var(--partial);"></span>0.50–0.79 → Needs Improvement</span>
+      <span style="display: flex; align-items: center; gap: 8px;"><span style="width:10px;height:10px;border-radius:50%;background:var(--flagged);"></span>0.00–0.49 → Fail</span>
     </div>
+  </div>
+</div>
+<!-- /view-single -->
 
+
+<div id="view-batch" style="display:none;">
+  <div class="masthead">
+    <div>
+      <h1>Batch Evaluation</h1>
+      <div class="sub">Run evaluations on multiple records simultaneously via CSV upload</div>
+    </div>
   </div>
 
-  <!-- ============ M3.4 Batch Evaluation Module ============ -->
-  <div class="section-title" style="margin-top:60px;">Batch evaluation (CSV)</div>
-  <div class="pipeline" style="padding:22px;">
-    <div class="field-group" style="margin-bottom:14px;">
-      <label class="field-label" for="csvFile">Upload CSV <span class="req">*</span></label>
-      <input type="file" id="csvFile" accept=".csv" style="color:var(--paper);">
-      <div style="font-size:12px;color:var(--muted);margin-top:8px;">
-        Required columns: <code>question</code>, <code>ai_response</code>. Optional: <code>reference_answer</code>, <code>source_document</code>.
-      </div>
+  <div class="dropzone" id="dropzone" tabindex="0" role="group" aria-label="CSV upload area">
+    <input type="file" id="csvFile" accept=".csv" style="position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;" aria-label="Choose CSV file">
+    <div class="dropzone-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
     </div>
+    <div class="dropzone-text" id="dropzoneText">Drop CSV here or <span class="dropzone-link">choose file</span></div>
+    <div class="dropzone-meta">Required columns: <code>question</code>, <code>ai_response</code>. Optional: <code>reference_answer</code>, <code>source_document</code>.</div>
+  </div>
+
+  <div style="margin-top:24px;">
     <button class="run" id="batchSubmitBtn" onclick="runBatchEvaluation()">Run batch evaluation</button>
-    <div class="error-box" id="batchErrorBox"></div>
-
-    <div id="batchProgress" style="display:none;margin-top:18px;font-size:13px;color:var(--muted);"></div>
-
-    <div id="batchInvalidPanel" style="display:none;margin-top:18px;">
-      <div class="section-title" style="margin:0 0 10px 0;">Invalid rows</div>
-      <div id="batchInvalidList"></div>
-    </div>
-
-    <div id="batchSummaryPanel" style="display:none;margin-top:24px;">
-      <div class="section-title" style="margin:0 0 10px 0;">Aggregate statistics</div>
-      <div class="metric-grid" id="batchStatsGrid"></div>
-    </div>
-
-    <div id="batchTableWrap" style="display:none;margin-top:24px;overflow-x:auto;">
-      <div class="section-title" style="margin:0 0 10px 0;">Batch results</div>
-      <table style="width:100%;border-collapse:collapse;font-size:13px;">
-        <thead>
-          <tr style="border-bottom:1px solid var(--line);text-align:left;color:var(--muted);">
-            <th style="padding:8px;">#</th>
-            <th style="padding:8px;">Question</th>
-            <th style="padding:8px;">Relevance</th>
-            <th style="padding:8px;">Accuracy</th>
-            <th style="padding:8px;">Hallucination</th>
-            <th style="padding:8px;">Completeness</th>
-            <th style="padding:8px;">Overall</th>
-            <th style="padding:8px;">Verdict</th>
-            <th style="padding:8px;"></th>
-          </tr>
-        </thead>
-        <tbody id="batchTableBody"></tbody>
-      </table>
-    </div>
   </div>
+  <div class="error-box" id="batchErrorBox"></div>
+
+  <div id="batchProgress" style="display:none;margin-top:24px;font-size:14.5px;color:var(--paper);font-weight:600;"></div>
+
+  <div id="batchInvalidPanel" style="display:none;margin-top:24px;">
+    <div class="section-title" style="margin:0 0 16px 0;">Invalid rows</div>
+    <div id="batchInvalidList"></div>
+  </div>
+
+  <div id="batchSummaryPanel" style="display:none;margin-top:32px;">
+    <div class="section-title" style="margin:0 0 16px 0;">Aggregate statistics</div>
+    <div class="metric-grid" id="batchStatsGrid"></div>
+  </div>
+
+  <div id="batchTableWrap" style="display:none;margin-top:32px;overflow-x:auto;">
+    <div class="section-title" style="margin:0 0 16px 0;">Batch results</div>
+    <table class="dash-table">
+      <thead>
+        <tr>
+          <th>#</th><th>Question</th><th>Relevance</th><th>Accuracy</th><th>Hallucination</th><th>Completeness</th><th>Overall</th><th>Verdict</th><th></th>
+        </tr>
+      </thead>
+      <tbody id="batchTableBody"></tbody>
+    </table>
+  </div>
+</div>
+<!-- /view-batch -->
 
 </div>
+<!-- /wrap -->
 
 <script>
 const API_BASE = window.location.origin;
+const REDUCE_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function escapeHtml(str) {
   const d = document.createElement('div');
@@ -580,10 +800,11 @@ function shortStatus(score, category) {
 }
 
 const ICONS = {
-  check: '<svg class="icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
-  alert: '<svg class="icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-  x: '<svg class="icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  check: '<svg class="icon" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  alert: '<svg class="icon" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  x: '<svg class="icon" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
   chevron: '<svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
+  warn: '<svg class="icon" style="width:18px;height:18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
 };
 
 function verdictInfo(verdict, verdictLabel) {
@@ -626,12 +847,142 @@ function annotateResponse(responseText, claims) {
 function setStatus(state) {
   const el = document.getElementById('status');
   const text = document.getElementById('statusText');
-  el.className = 'status' + (state === 'busy' ? ' busy' : state === 'done' ? ' done' : '');
-  text.textContent = state === 'busy' ? 'verifying…' : state === 'done' ? 'complete' : 'ready';
+  if(el && text) {
+      el.className = 'status' + (state === 'busy' ? ' busy' : state === 'done' ? ' done' : '');
+      text.textContent = state === 'busy' ? 'verifying…' : state === 'done' ? 'complete' : 'ready';
+  }
+}
+
+let currentView = 'dashboard';
+
+function switchView(view) {
+  currentView = view;
+  document.getElementById('view-single').style.display = view === 'single' ? 'block' : 'none';
+  document.getElementById('view-batch').style.display = view === 'batch' ? 'block' : 'none';
+  document.getElementById('view-dashboard').style.display = view === 'dashboard' ? 'block' : 'none';
+  document.getElementById('view-records').style.display = view === 'records' ? 'block' : 'none';
+
+  document.getElementById('tabSingle').classList.toggle('active', view === 'single');
+  document.getElementById('tabBatch').classList.toggle('active', view === 'batch');
+  document.getElementById('tabDashboard').classList.toggle('active', view === 'dashboard');
+  document.getElementById('tabRecords').classList.toggle('active', view === 'records');
+  
+  document.getElementById('tabSingle').setAttribute('aria-selected', view === 'single');
+  document.getElementById('tabBatch').setAttribute('aria-selected', view === 'batch');
+  document.getElementById('tabDashboard').setAttribute('aria-selected', view === 'dashboard');
+  document.getElementById('tabRecords').setAttribute('aria-selected', view === 'records');
+
+  document.getElementById('refreshBtn').style.display = (view === 'dashboard' || view === 'records') ? 'inline-block' : 'none';
+  document.getElementById('topnavUpdated').style.display = (view === 'dashboard' || view === 'records') ? 'inline-block' : 'none';
+
+  window.scrollTo({ top: 0, behavior: REDUCE_MOTION ? 'auto' : 'smooth' });
+
+  if ((view === 'dashboard' || view === 'records') && !dashboardLoadedOnce) {
+    loadDashboard();
+  }
+}
+
+function viewFullResult(resultObj) {
+  switchView('single');
+  renderResult(resultObj, resultObj.ai_response);
+  setTimeout(() => {
+    document.getElementById('results').scrollIntoView({ behavior: REDUCE_MOTION ? 'auto' : 'smooth' });
+  }, 50);
 }
 
 function toggleJudgePanel(id) {
   document.getElementById(id).classList.toggle('open');
+}
+
+function animateCount(el, target, decimals) {
+  if (REDUCE_MOTION || typeof target !== 'number') { el.textContent = typeof target === 'number' ? target.toFixed(decimals) : target; return; }
+  const duration = 650;
+  const start = performance.now();
+  function tick(now) {
+    const p = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = (target * eased).toFixed(decimals);
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function animateRings(container) {
+  const rings = container.querySelectorAll('.ring-progress[data-final-offset]');
+  rings.forEach(r => {
+    const final = r.getAttribute('data-final-offset');
+    if (REDUCE_MOTION) { r.style.strokeDashoffset = final; return; }
+    requestAnimationFrame(() => requestAnimationFrame(() => { r.style.strokeDashoffset = final; }));
+  });
+}
+
+function animateBars(container, selector) {
+  const bars = container.querySelectorAll(selector + '[data-final-width]');
+  bars.forEach(b => {
+    const final = b.getAttribute('data-final-width');
+    if (REDUCE_MOTION) { b.style.width = final; return; }
+    requestAnimationFrame(() => requestAnimationFrame(() => { b.style.width = final; }));
+  });
+}
+
+function animateMeters(container) {
+  animateBars(container, '.meter-fill');
+}
+
+let processStageTimer = null;
+const PROCESS_STAGE_ORDER = ['retrieve', 'relevance', 'accuracy', 'hallucination', 'completeness', 'verdict'];
+
+function startProcessingStages() {
+  const box = document.getElementById('processStages');
+  box.style.display = 'block';
+  box.querySelectorAll('.process-stage').forEach(el => el.classList.remove('active', 'past'));
+  if (REDUCE_MOTION) {
+    box.querySelectorAll('.process-stage').forEach(el => el.classList.add('active'));
+    return;
+  }
+  let i = 0;
+  const advance = () => {
+    box.querySelectorAll('.process-stage').forEach((el, idx) => {
+      el.classList.toggle('active', idx === i);
+      el.classList.toggle('past', idx < i);
+    });
+    i = (i + 1) % PROCESS_STAGE_ORDER.length;
+  };
+  advance();
+  processStageTimer = setInterval(advance, 900);
+}
+
+function stopProcessingStages() {
+  if (processStageTimer) { clearInterval(processStageTimer); processStageTimer = null; }
+  const box = document.getElementById('processStages');
+  box.style.display = 'none';
+}
+
+function initDropzone() {
+  const zone = document.getElementById('dropzone');
+  const input = document.getElementById('csvFile');
+  const text = document.getElementById('dropzoneText');
+  if (!zone || !input) return;
+
+  input.addEventListener('change', () => {
+    if (input.files && input.files[0]) {
+      text.innerHTML = escapeHtml(input.files[0].name);
+    }
+  });
+
+  ['dragenter', 'dragover'].forEach(evt => zone.addEventListener(evt, e => {
+    e.preventDefault(); e.stopPropagation(); zone.classList.add('drag');
+  }));
+  ['dragleave', 'drop'].forEach(evt => zone.addEventListener(evt, e => {
+    e.preventDefault(); e.stopPropagation(); zone.classList.remove('drag');
+  }));
+  zone.addEventListener('drop', e => {
+    const files = e.dataTransfer.files;
+    if (files && files[0]) {
+      input.files = files;
+      text.innerHTML = escapeHtml(files[0].name);
+    }
+  });
 }
 
 async function runEvaluation() {
@@ -646,6 +997,7 @@ async function runEvaluation() {
 
   errorBox.style.display = 'none';
   results.style.display = 'none';
+  results.classList.remove('in');
 
   if (!question || !ai_response) {
     errorBox.textContent = 'Question and response under review are both required.';
@@ -659,6 +1011,7 @@ async function runEvaluation() {
 
   submitBtn.disabled = true;
   setStatus('busy');
+  startProcessingStages();
 
   try {
     const res = await fetch(`${API_BASE}/evaluate`, {
@@ -681,6 +1034,7 @@ async function runEvaluation() {
     setStatus('ready');
   } finally {
     submitBtn.disabled = false;
+    stopProcessingStages();
   }
 }
 
@@ -690,14 +1044,13 @@ function renderResult(data, responseText) {
   const hal = data.hallucination || {};
   const comp = data.completeness || {};
 
-  // ===== 1. HERO VERDICT =====
   const v = verdictInfo(data.verdict, data.verdict_label);
-  document.getElementById('hero').className = 'hero ' + v.cls;
+  document.getElementById('hero').className = 'verdict-card ' + v.cls;
   const heroIcon = document.getElementById('heroIcon');
-  heroIcon.className = 'hero-icon ' + v.cls;
+  heroIcon.className = 'verdict-icon ' + v.cls;
   heroIcon.innerHTML = v.icon;
   const heroLabel = document.getElementById('heroVerdictLabel');
-  heroLabel.className = 'hero-verdict-label ' + v.cls;
+  heroLabel.className = 'verdict-label ' + v.cls;
   heroLabel.textContent = v.text;
   document.getElementById('heroStatusDesc').textContent = v.desc;
   document.getElementById('heroScoreNum').textContent = (data.overall_score ?? 0).toFixed(2);
@@ -714,10 +1067,9 @@ function renderResult(data, responseText) {
   const evidenceBacked = (acc.evidence && acc.evidence.length > 0) || (hal.evidence && hal.evidence.length > 0);
   const metaEl = document.getElementById('heroMeta');
   metaEl.innerHTML = `
-    <span class="meta-chip ${evidenceBacked ? 'on' : ''}">${evidenceBacked ? ICONS.check.replace('width="28" height="28"', 'width="13" height="13"') : ''} ${evidenceBacked ? 'Evidence-backed evaluation' : 'No retrieved evidence used'}</span>
+    <span class="badge" style="color:${evidenceBacked ? 'var(--verified)' : 'var(--muted)'};border-color:${evidenceBacked ? 'var(--verified)' : 'var(--muted)'};">${evidenceBacked ? ICONS.check.replace('width="26" height="26"', 'width="14" height="14"') : ''} ${evidenceBacked ? 'Evidence-backed evaluation' : 'No retrieved evidence used'}</span>
   `;
 
-  // ===== 2. SCORE OVERVIEW GRID =====
   const agentDefs = [
     { key: 'relevance', label: 'Relevance', data: rel },
     { key: 'accuracy', label: 'Accuracy', data: acc },
@@ -729,88 +1081,73 @@ function renderResult(data, responseText) {
     const r = a.data;
     const category = a.categoryKey ? r[a.categoryKey] : r.category;
     const color = scoreColor(r.score ?? 0);
-    const pct = Math.round((r.score ?? 0) * 100);
     return `
       <div class="metric-tile">
-        <div class="metric-tile-top">
-          <div class="metric-tile-label">${a.label}</div>
-          <svg class="ring" viewBox="0 0 40 40">
-            <circle cx="20" cy="20" r="16" fill="none" stroke="var(--field)" stroke-width="4"/>
-            <circle cx="20" cy="20" r="16" fill="none" stroke="${color}" stroke-width="4"
-              stroke-dasharray="${2*Math.PI*16}" stroke-dashoffset="${2*Math.PI*16*(1-(r.score ?? 0))}"
-              stroke-linecap="round" transform="rotate(-90 20 20)"/>
-          </svg>
-        </div>
+        <div class="metric-tile-label">${a.label}</div>
         <div class="metric-tile-score" style="color:${color};">${(r.score ?? 0).toFixed(2)}</div>
         ${badgeHtml(category)}
-        <div class="metric-tile-status">${shortStatus(r.score ?? 0, category)}</div>
       </div>
     `;
   }).join('');
 
-  // ===== 3. PIPELINE VISUALIZATION =====
   const vColor = v.cls === 'pass' ? 'var(--verified)' : v.cls === 'partial' ? 'var(--partial)' : 'var(--flagged)';
   document.getElementById('pipeline').innerHTML = `
     <div class="pipeline-col">
       <div class="pipeline-node">Question + AI Response</div>
-      <div class="pipeline-arrow down">→</div>
+      <div class="pipeline-arrow">↓</div>
       <div class="pipeline-node">RAG Evidence Retrieval</div>
-      <div class="pipeline-arrow down">→</div>
+      <div class="pipeline-arrow">↓</div>
       <div class="pipeline-node judges">
         <div class="j">Relevance Judge</div>
         <div class="j">Accuracy Judge</div>
         <div class="j">Hallucination Judge</div>
         <div class="j">Completeness Judge</div>
       </div>
-      <div class="pipeline-arrow down">→</div>
-      <div class="pipeline-node pipeline-verdict-node" style="color:${vColor};">Weighted Verdict — ${v.text}</div>
+      <div class="pipeline-arrow">↓</div>
+      <div class="pipeline-node pipeline-verdict-node" style="color:${vColor};border-color:${vColor};">Weighted Verdict — ${v.text}</div>
     </div>
   `;
 
-  // ===== 4. WHY THIS VERDICT =====
   const strengths = agentDefs.filter(a => (a.data.score ?? 0) >= 0.8 && a.data.reason).map(a => a.data.reason);
   const warnings = (data.major_issues || []).filter(issue => !/unsupported|fabricat|contradict/i.test(issue));
   const critical = (data.major_issues || []).filter(issue => /unsupported|fabricat|contradict/i.test(issue));
 
   let whyHtml = '';
   if (strengths.length > 0) {
-    whyHtml += `<div class="why-group-label strength">${ICONS.check.replace('width="28" height="28"', 'width="16" height="16"')} Strengths</div>`;
+    whyHtml += `<div class="why-group-label strength">${ICONS.check.replace('width="26" height="26"', 'width="18" height="18"')} Strengths</div>`;
     whyHtml += strengths.map(s => `<div class="why-item">${escapeHtml(s)}</div>`).join('');
   }
   if (warnings.length > 0) {
-    whyHtml += `<div class="why-group-label warning" style="margin-top:16px;">${ICONS.alert.replace('width="28" height="28"', 'width="16" height="16"')} Areas to improve</div>`;
+    whyHtml += `<div class="why-group-label warning" style="margin-top:20px;">${ICONS.alert.replace('width="26" height="26"', 'width="18" height="18"')} Areas to improve</div>`;
     whyHtml += warnings.map(w => `<div class="why-item">${escapeHtml(w)}</div>`).join('');
   }
   if (critical.length > 0) {
-    whyHtml += `<div class="why-group-label critical" style="margin-top:16px;">${ICONS.x.replace('width="28" height="28"', 'width="16" height="16"')} Critical issues</div>`;
+    whyHtml += `<div class="why-group-label critical" style="margin-top:20px;">${ICONS.x.replace('width="26" height="26"', 'width="18" height="18"')} Critical issues</div>`;
     whyHtml += critical.map(c => `<div class="why-item">${escapeHtml(c)}</div>`).join('');
   }
   if (!whyHtml) {
-    whyHtml = `<div class="empty-state">${ICONS.check.replace('width="28" height="28"', 'width="18" height="18"')} No issues identified across any evaluation dimension.</div>`;
+    whyHtml = `<div class="empty-state">${ICONS.check.replace('width="26" height="26"', 'width="20" height="20"')} No issues identified across any evaluation dimension.</div>`;
   }
   document.getElementById('whySection').innerHTML = whyHtml;
 
-  // ===== 5-8. DETAILED JUDGE PANELS =====
   let panelsHtml = '';
 
-  // Relevance
   panelsHtml += `
     <div class="judge-panel" id="panel-relevance">
       <div class="judge-panel-header" onclick="toggleJudgePanel('panel-relevance')">
-        <div class="judge-panel-title">Relevance ${badgeHtml(rel.category)}</div>
+        <div class="judge-panel-title"><span class="judge-panel-eyebrow">Relevance analysis</span> ${badgeHtml(rel.category)}</div>
         <div class="judge-panel-right">
-          <div class="judge-panel-score" style="color:${scoreColor(rel.score ?? 0)};">${(rel.score ?? 0).toFixed(2)}</div>
+          <div class="judge-panel-score" style="color:${scoreColor(rel.score ?? 0)};border-color:${scoreColor(rel.score ?? 0)};">${(rel.score ?? 0).toFixed(2)}</div>
           ${ICONS.chevron}
         </div>
       </div>
       <div class="judge-panel-body">
-        <div class="meter"><div class="meter-fill" style="width:${(rel.score ?? 0)*100}%;background:${scoreColor(rel.score ?? 0)};"></div></div>
+        <div class="meter"><div class="meter-fill" data-final-width="${(rel.score ?? 0)*100}%" style="background:${scoreColor(rel.score ?? 0)};"></div></div>
         <p class="judge-reason">${escapeHtml(rel.reason || '')}</p>
       </div>
     </div>
   `;
 
-  // Accuracy
   const accEvidenceHtml = (acc.evidence && acc.evidence.length > 0) ? `
     <div class="flow-block">
       <div class="flow-label">AI Claim</div>
@@ -826,21 +1163,20 @@ function renderResult(data, responseText) {
   panelsHtml += `
     <div class="judge-panel" id="panel-accuracy">
       <div class="judge-panel-header" onclick="toggleJudgePanel('panel-accuracy')">
-        <div class="judge-panel-title">Accuracy ${badgeHtml(acc.category)}</div>
+        <div class="judge-panel-title"><span class="judge-panel-eyebrow">Accuracy analysis</span> ${badgeHtml(acc.category)}</div>
         <div class="judge-panel-right">
-          <div class="judge-panel-score" style="color:${scoreColor(acc.score ?? 0)};">${(acc.score ?? 0).toFixed(2)}</div>
+          <div class="judge-panel-score" style="color:${scoreColor(acc.score ?? 0)};border-color:${scoreColor(acc.score ?? 0)};">${(acc.score ?? 0).toFixed(2)}</div>
           ${ICONS.chevron}
         </div>
       </div>
       <div class="judge-panel-body">
-        <div class="meter"><div class="meter-fill" style="width:${(acc.score ?? 0)*100}%;background:${scoreColor(acc.score ?? 0)};"></div></div>
+        <div class="meter"><div class="meter-fill" data-final-width="${(acc.score ?? 0)*100}%" style="background:${scoreColor(acc.score ?? 0)};"></div></div>
         <p class="judge-reason">${escapeHtml(acc.reason || '')}</p>
         ${accEvidenceHtml}
       </div>
     </div>
   `;
 
-  // Hallucination Investigation (most distinctive)
   const claimEvidence = hal.claim_evidence || [];
   let claimsHtml = '';
   if (claimEvidence.length > 0) {
@@ -860,22 +1196,22 @@ function renderResult(data, responseText) {
             </div>
             <span class="badge" style="color:${tagColor};border-color:${tagColor};">${tagText}</span>
           </div>
-          ${evidenceItems ? `<div class="claim-label" style="margin-top:10px;">Evidence</div>${evidenceItems}` : ''}
-          <div class="claim-label" style="margin-top:10px;">Reason</div>
+          ${evidenceItems ? `<div class="claim-label" style="margin-top:14px;">Evidence</div>${evidenceItems}` : ''}
+          <div class="claim-label" style="margin-top:14px;">Reason</div>
           <div class="claim-reason" style="margin:0;">${escapeHtml(c.reason || '')}</div>
         </div>
       `;
     }).join('');
   } else {
-    claimsHtml = `<div class="empty-state">${ICONS.check.replace('width="28" height="28"', 'width="18" height="18"')} No unsupported claims detected</div>`;
+    claimsHtml = `<div class="empty-state">${ICONS.check.replace('width="26" height="26"', 'width="20" height="20"')} No unsupported claims detected</div>`;
   }
   const halStatus = hal.hallucination_status || 'none';
   panelsHtml += `
     <div class="judge-panel open" id="panel-hallucination">
       <div class="judge-panel-header" onclick="toggleJudgePanel('panel-hallucination')">
-        <div class="judge-panel-title">Hallucination Investigation</div>
+        <div class="judge-panel-title"><span class="judge-panel-eyebrow">Hallucination analysis</span></div>
         <div class="judge-panel-right">
-          <div class="judge-panel-score" style="color:${scoreColor(hal.score ?? 0)};">${(hal.score ?? 0).toFixed(2)}</div>
+          <div class="judge-panel-score" style="color:${scoreColor(hal.score ?? 0)};border-color:${scoreColor(hal.score ?? 0)};">${(hal.score ?? 0).toFixed(2)}</div>
           ${ICONS.chevron}
         </div>
       </div>
@@ -884,26 +1220,25 @@ function renderResult(data, responseText) {
           Hallucination status: ${halStatus.toUpperCase()}
         </div>
         <p class="judge-reason">${escapeHtml(hal.reason || '')}</p>
-        <div style="margin-top:16px;">${claimsHtml}</div>
+        <div style="margin-top:20px;">${claimsHtml}</div>
       </div>
     </div>
   `;
 
-  // Completeness
   const addressed = comp.addressed_aspects || [];
   const missing = comp.missing_aspects || [];
   const aspectsHtml = (addressed.length > 0 || missing.length > 0) ? `
-    <div class="aspect-cols">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:20px;">
       <div>
-        <div class="aspect-col-label" style="color:var(--verified);">Addressed aspects</div>
-        <ul class="aspect-list addressed">
-          ${addressed.map(a => `<li>${ICONS.check.replace('width="28" height="28"', 'width="14" height="14"')} ${escapeHtml(a)}</li>`).join('') || '<li style="color:var(--muted);">None identified</li>'}
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--verified);margin-bottom:10px;font-weight:700;">Addressed aspects</div>
+        <ul style="list-style:none;padding:0;margin:0;">
+          ${addressed.map(a => `<li style="display:flex;align-items:flex-start;gap:8px;font-size:14.5px;padding:6px 0;color:var(--paper);font-weight:500;">${ICONS.check.replace('width="26" height="26"', 'width="16" height="16" style="color:var(--verified);margin-top:2px;"')} ${escapeHtml(a)}</li>`).join('') || '<li style="color:var(--muted);">None identified</li>'}
         </ul>
       </div>
       <div>
-        <div class="aspect-col-label" style="color:var(--partial);">Missing aspects</div>
-        <ul class="aspect-list missing">
-          ${missing.map(a => `<li>${ICONS.alert.replace('width="28" height="28"', 'width="14" height="14"')} ${escapeHtml(a)}</li>`).join('') || '<li style="color:var(--muted);">None — fully covered</li>'}
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--partial);margin-bottom:10px;font-weight:700;">Missing aspects</div>
+        <ul style="list-style:none;padding:0;margin:0;">
+          ${missing.map(a => `<li style="display:flex;align-items:flex-start;gap:8px;font-size:14.5px;padding:6px 0;color:var(--paper);font-weight:500;">${ICONS.alert.replace('width="26" height="26"', 'width="16" height="16" style="color:var(--partial);margin-top:2px;"')} ${escapeHtml(a)}</li>`).join('') || '<li style="color:var(--muted);">None — fully covered</li>'}
         </ul>
       </div>
     </div>
@@ -911,14 +1246,14 @@ function renderResult(data, responseText) {
   panelsHtml += `
     <div class="judge-panel" id="panel-completeness">
       <div class="judge-panel-header" onclick="toggleJudgePanel('panel-completeness')">
-        <div class="judge-panel-title">Completeness ${badgeHtml(comp.category)}</div>
+        <div class="judge-panel-title"><span class="judge-panel-eyebrow">Completeness analysis</span> ${badgeHtml(comp.category)}</div>
         <div class="judge-panel-right">
-          <div class="judge-panel-score" style="color:${scoreColor(comp.score ?? 0)};">${(comp.score ?? 0).toFixed(2)}</div>
+          <div class="judge-panel-score" style="color:${scoreColor(comp.score ?? 0)};border-color:${scoreColor(comp.score ?? 0)};">${(comp.score ?? 0).toFixed(2)}</div>
           ${ICONS.chevron}
         </div>
       </div>
       <div class="judge-panel-body">
-        <div class="meter"><div class="meter-fill" style="width:${(comp.score ?? 0)*100}%;background:${scoreColor(comp.score ?? 0)};"></div></div>
+        <div class="meter"><div class="meter-fill" data-final-width="${(comp.score ?? 0)*100}%" style="background:${scoreColor(comp.score ?? 0)};"></div></div>
         <p class="judge-reason">${escapeHtml(comp.reason || '')}</p>
         ${aspectsHtml}
       </div>
@@ -926,8 +1261,8 @@ function renderResult(data, responseText) {
   `;
 
   document.getElementById('judgePanels').innerHTML = panelsHtml;
+  animateMeters(document.getElementById('judgePanels'));
 
-  // ===== 9. EVIDENCE EXPLORER =====
   const evidence = hal.evidence || [];
   const evidenceSectionTitle = document.getElementById('evidenceSectionTitle');
   const evidencePanel = document.getElementById('evidencePanel');
@@ -942,7 +1277,6 @@ function renderResult(data, responseText) {
     evidencePanel.style.display = 'none';
   }
 
-  // ===== 10. RESPONSE VS EVIDENCE =====
   const compareSectionTitle = document.getElementById('compareSectionTitle');
   const compareGrid = document.getElementById('compareGrid');
   if (evidence.length > 0) {
@@ -954,7 +1288,7 @@ function renderResult(data, responseText) {
       </div>
       <div class="compare-col">
         <div class="compare-col-label">Retrieved Evidence</div>
-        <div class="compare-body">${evidence.map(e => `<div style="margin-bottom:10px;">${escapeHtml(e)}</div>`).join('')}</div>
+        <div class="compare-body">${evidence.map(e => `<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(15,23,42,0.05);">${escapeHtml(e)}</div>`).join('')}</div>
       </div>
     `;
     compareSectionTitle.style.display = 'block';
@@ -964,12 +1298,11 @@ function renderResult(data, responseText) {
     compareGrid.style.display = 'none';
   }
 
-  // Improvement suggestions
   const suggestionsSectionTitle = document.getElementById('suggestionsSectionTitle');
   const suggestionsPanel = document.getElementById('suggestionsPanel');
   const suggestions = data.improvement_suggestions || [];
   if (suggestions.length > 0) {
-    document.getElementById('suggestionsList').innerHTML = suggestions.map(s => `<li>${escapeHtml(s)}</li>`).join('');
+    document.getElementById('suggestionsList').innerHTML = suggestions.map(s => `<li style="margin-bottom:10px;">${escapeHtml(s)}</li>`).join('');
     suggestionsSectionTitle.style.display = 'block';
     suggestionsPanel.style.display = 'block';
   } else {
@@ -978,11 +1311,11 @@ function renderResult(data, responseText) {
   }
 
   document.getElementById('results').style.display = 'block';
+  document.getElementById('results').classList.add('in');
 }
 
-// ============ M3.4 Batch Evaluation Module ============
-
 let batchRecords = [];
+let currentBatchId = null;
 
 async function runBatchEvaluation() {
   const fileInput = document.getElementById('csvFile');
@@ -1056,6 +1389,7 @@ function handleBatchLine(msg) {
   const statsGrid = document.getElementById('batchStatsGrid');
 
   if (msg.type === 'init') {
+    currentBatchId = msg.batch_id || null;
     if (msg.invalid_rows && msg.invalid_rows.length > 0) {
       invalidList.innerHTML = msg.invalid_rows.map(r =>
         `<div class="why-item" style="color:var(--flagged);">Row ${r.row_number}: ${escapeHtml(r.reason)}</div>`
@@ -1071,26 +1405,25 @@ function handleBatchLine(msg) {
     const rec = msg.record;
     batchRecords.push(rec);
     const row = document.createElement('tr');
-    row.style.borderBottom = '1px solid var(--line)';
     if (rec.error) {
       row.innerHTML = `
-        <td style="padding:8px;">${rec.row_number}</td>
-        <td style="padding:8px;" colspan="6">Evaluation failed: ${escapeHtml(rec.error)}</td>
-        <td style="padding:8px;"></td>
+        <td>${rec.row_number}</td>
+        <td colspan="6" style="color:var(--flagged);">Evaluation failed: ${escapeHtml(rec.error)}</td>
+        <td></td>
       `;
     } else {
       const r = rec.result;
       const vColor = scoreColor(r.overall_score);
       row.innerHTML = `
-        <td style="padding:8px;">${rec.row_number}</td>
-        <td style="padding:8px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(rec.question)}</td>
-        <td style="padding:8px;color:${scoreColor(r.relevance.score)};">${r.relevance.score.toFixed(2)}</td>
-        <td style="padding:8px;color:${scoreColor(r.accuracy.score)};">${r.accuracy.score.toFixed(2)}</td>
-        <td style="padding:8px;color:${scoreColor(r.hallucination.score)};">${r.hallucination.score.toFixed(2)} (${r.hallucination.hallucination_status})</td>
-        <td style="padding:8px;color:${scoreColor(r.completeness.score)};">${r.completeness.score.toFixed(2)}</td>
-        <td style="padding:8px;color:${vColor};font-weight:600;">${r.overall_score.toFixed(2)}</td>
-        <td style="padding:8px;">${escapeHtml(r.verdict_label || r.verdict)}</td>
-        <td style="padding:8px;"><button class="run" style="padding:6px 12px;font-size:12px;" onclick="viewBatchRecord(${batchRecords.length - 1})">View</button></td>
+        <td>${rec.row_number}</td>
+        <td class="q-cell">${escapeHtml(rec.question)}</td>
+        <td><span class="score-pill" style="color:${scoreColor(r.relevance.score)};">${r.relevance.score.toFixed(2)}</span></td>
+        <td><span class="score-pill" style="color:${scoreColor(r.accuracy.score)};">${r.accuracy.score.toFixed(2)}</span></td>
+        <td><span class="score-pill" style="color:${scoreColor(r.hallucination.score)};">${r.hallucination.score.toFixed(2)}</span> <span style="color:var(--muted);font-size:11px;font-weight:700;">(${r.hallucination.hallucination_status})</span></td>
+        <td><span class="score-pill" style="color:${scoreColor(r.completeness.score)};">${r.completeness.score.toFixed(2)}</span></td>
+        <td><span class="score-pill" style="color:${vColor};border-color:${vColor};">${r.overall_score.toFixed(2)}</span></td>
+        <td>${verdictBadgeHtml(r.verdict)}</td>
+        <td><button class="table-view-btn" onclick="viewBatchRecord(${batchRecords.length - 1})">View</button></td>
       `;
     }
     tbody.appendChild(row);
@@ -1099,10 +1432,10 @@ function handleBatchLine(msg) {
   if (msg.type === 'summary') {
     const s = msg.summary;
     statsGrid.innerHTML = `
-      <div class="metric-tile"><div class="metric-tile-label">Total records</div><div class="metric-tile-score">${s.total_records}</div><div class="metric-tile-status">${s.valid_records} valid · ${s.invalid_records} invalid</div></div>
-      <div class="metric-tile"><div class="metric-tile-label">Avg overall</div><div class="metric-tile-score" style="color:${scoreColor(s.average_overall)};">${s.average_overall.toFixed(2)}</div><div class="metric-tile-status">${s.evaluated_records} evaluated${s.failed_records ? ', ' + s.failed_records + ' failed' : ''}</div></div>
-      <div class="metric-tile"><div class="metric-tile-label">Verdicts</div><div class="metric-tile-score" style="font-size:13px;line-height:1.5;">${s.pass_count} Pass<br>${s.needs_improvement_count} Needs Improvement<br>${s.fail_count} Fail</div></div>
-      <div class="metric-tile"><div class="metric-tile-label">Hallucination frequency</div><div class="metric-tile-score" style="color:${scoreColor(1 - s.hallucination_frequency)};">${(s.hallucination_frequency * 100).toFixed(0)}%</div></div>
+      <div class="metric-tile"><div class="metric-tile-label">Total records</div><div class="metric-tile-score">${s.total_records}</div><div class="kpi-card-sub">${s.valid_records} valid · ${s.invalid_records} invalid</div></div>
+      <div class="metric-tile"><div class="metric-tile-label">Avg overall</div><div class="metric-tile-score" style="color:${scoreColor(s.average_overall)};">${s.average_overall.toFixed(2)}</div><div class="kpi-card-sub">${s.evaluated_records} evaluated</div></div>
+      <div class="metric-tile"><div class="metric-tile-label">Verdicts</div><div class="metric-tile-score" style="font-size:15px;line-height:1.5;">${s.pass_count} Pass / ${s.needs_improvement_count} Needs Improvement / ${s.fail_count} Fail</div></div>
+      <div class="metric-tile"><div class="metric-tile-label">Hallucination frequency</div><div class="metric-tile-score" style="color:${scoreColor(1-s.hallucination_frequency)};">${(s.hallucination_frequency*100).toFixed(0)}%</div></div>
       <div class="metric-tile"><div class="metric-tile-label">Avg relevance</div><div class="metric-tile-score">${s.average_relevance.toFixed(2)}</div></div>
       <div class="metric-tile"><div class="metric-tile-label">Avg accuracy</div><div class="metric-tile-score">${s.average_accuracy.toFixed(2)}</div></div>
       <div class="metric-tile"><div class="metric-tile-label">Avg hallucination</div><div class="metric-tile-score">${s.average_hallucination.toFixed(2)}</div></div>
@@ -1110,15 +1443,503 @@ function handleBatchLine(msg) {
     `;
     summaryPanel.style.display = 'block';
     progressEl.textContent = `Done — ${s.evaluated_records} of ${s.valid_records} valid records evaluated successfully.`;
+    if (currentBatchId) {
+      progressEl.innerHTML += ` &nbsp; <button class="table-view-btn" onclick="exportBatchReport('${currentBatchId}', this)">Export PDF report</button>`;
+    }
   }
+}
+
+function verdictBadgeHtml(verdict) {
+  const map = { PASS: ['Pass', 'var(--verified)'], PARTIAL: ['Needs Improvement', 'var(--partial)'], FAIL: ['Fail', 'var(--flagged)'] };
+  const [text, color] = map[verdict] || [verdict, 'var(--muted)'];
+  return `<span class="badge" style="color:${color};border-color:${color};">${text}</span>`;
 }
 
 function viewBatchRecord(index) {
   const rec = batchRecords[index];
   if (!rec || !rec.result) return;
-  renderResult(rec.result, rec.result.ai_response);
-  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+  viewFullResult(rec.result);
 }
+
+async function exportBatchReport(batchId, btn) {
+  const originalText = btn ? btn.textContent : null;
+  if (btn) { btn.disabled = true; btn.textContent = 'Generating report…'; }
+  try {
+    const res = await fetch(`${API_BASE}/reports/batch/${batchId}/pdf`);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail || `Request failed (${res.status})`);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `evaluation-report-${batchId.slice(0, 8)}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    if (btn) { btn.textContent = 'Report downloaded'; setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 1600); }
+  } catch (e) {
+    alert('Could not export report: ' + e.message);
+    if (btn) { btn.textContent = originalText; btn.disabled = false; }
+  }
+}
+
+let dashboardLoadedOnce = false;
+let dashCurrentFilters = { verdict: '', batch_id: '', min_score: '', max_score: '' };
+let dashRecordsOffset = 0;
+const DASH_PAGE_SIZE = 20;
+let dashBatchesCache = [];
+
+function buildQuery(params) {
+  const usp = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== '' && v !== null && v !== undefined) usp.append(k, v);
+  });
+  return usp.toString();
+}
+
+async function fetchJson(url) {
+  const res = await fetch(url);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.detail || `Request failed (${res.status})`);
+  }
+  return res.json();
+}
+
+function tierColor(score) {
+  if (score >= 0.8) return 'var(--verified)';
+  if (score >= 0.5) return 'var(--partial)';
+  return 'var(--flagged)';
+}
+
+function tierLabel(score) {
+  if (score >= 0.8) return 'STRONG';
+  if (score >= 0.5) return 'NEEDS IMPROVEMENT';
+  return 'LOW';
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+async function loadDashboard() {
+  const loadingEl = document.getElementById('dashLoading');
+  const errorEl = document.getElementById('dashError');
+  const emptyEl = document.getElementById('dashEmpty');
+  const contentEl = document.getElementById('dashContent');
+
+  if(loadingEl) loadingEl.style.display = 'block';
+  if(errorEl) errorEl.style.display = 'none';
+  if(emptyEl) emptyEl.style.display = 'none';
+  if(contentEl) contentEl.style.display = 'none';
+  
+  const sysText = document.getElementById('sysStatusText');
+  if(sysText) sysText.textContent = 'Syncing…';
+
+  try {
+    const filterQuery = buildQuery(dashCurrentFilters);
+
+    const [stats, batches] = await Promise.all([
+      fetchJson(`${API_BASE}/dashboard/stats${filterQuery ? '?' + filterQuery : ''}`),
+      fetchJson(`${API_BASE}/dashboard/batches`),
+    ]);
+
+    dashBatchesCache = batches.batches || [];
+    dashboardLoadedOnce = true;
+
+    if(loadingEl) loadingEl.style.display = 'none';
+
+    if(document.getElementById('dashHeroCount')) document.getElementById('dashHeroCount').textContent = stats.total_records;
+    if(document.getElementById('dashHeroStatus')) document.getElementById('dashHeroStatus').textContent = stats.total_records === 0 ? 'Awaiting data' : 'Online';
+    if(document.getElementById('dashHeroUpdated')) document.getElementById('dashHeroUpdated').textContent = new Date().toLocaleTimeString();
+
+    if (stats.total_records === 0 && !dashCurrentFilters.verdict && !dashCurrentFilters.batch_id
+        && !dashCurrentFilters.min_score && !dashCurrentFilters.max_score) {
+      if(emptyEl) emptyEl.style.display = 'block';
+      if(document.getElementById('topnavUpdated')) document.getElementById('topnavUpdated').textContent = 'last updated ' + new Date().toLocaleTimeString();
+      if(sysText) sysText.textContent = 'System Online';
+      return;
+    }
+
+    if(contentEl) contentEl.style.display = 'block';
+    renderKpiCards(stats);
+    renderQualityScores(stats);
+    renderVerdictDonut(stats);
+    renderScoreDistribution(stats);
+    renderHallucinationSection(stats);
+    renderCompletenessSection(stats);
+    renderTopIssues(stats);
+    populateBatchFilterOptions(dashBatchesCache);
+    await renderBatchHistory(dashBatchesCache);
+    dashRecordsOffset = 0;
+    await renderRecordsTable();
+
+    if(document.getElementById('topnavUpdated')) document.getElementById('topnavUpdated').textContent = 'last updated ' + new Date().toLocaleTimeString();
+    if(sysText) sysText.textContent = 'System Online';
+  } catch (e) {
+    if(loadingEl) loadingEl.style.display = 'none';
+    if(document.getElementById('dashErrorText')) document.getElementById('dashErrorText').textContent = 'Could not reach the evaluation API: ' + e.message;
+    if(errorEl) errorEl.style.display = 'flex';
+    if(sysText) sysText.textContent = 'API Unavailable';
+  }
+}
+
+function renderKpiCards(stats) {
+  const icon = (d) => `<svg class="kpi-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const cards = [
+    { label: 'Total Responses Evaluated', value: stats.total_records, sub: 'across all stored evaluations', icon: icon('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>') },
+    { label: 'Pass', value: stats.pass_count, sub: `${stats.pass_pct}% of total`, color: 'var(--verified)', icon: icon('<polyline points="20 6 9 17 4 12"/>') },
+    { label: 'Needs Improvement', value: stats.needs_improvement_count, sub: `${stats.needs_improvement_pct}% of total`, color: 'var(--partial)', icon: icon('<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>') },
+    { label: 'Fail', value: stats.fail_count, sub: `${stats.fail_pct}% of total`, color: 'var(--flagged)', icon: icon('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>') },
+    { label: 'Pass Rate', value: stats.pass_pct, sub: 'of evaluated responses', color: tierColor(stats.pass_pct / 100), suffix: '%', icon: icon('<path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.1-2.8-2.8L3 18"/>') },
+    { label: 'Avg Overall Score', value: stats.average_overall, sub: tierLabel(stats.average_overall), color: tierColor(stats.average_overall), decimals: 2, icon: icon('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>') },
+  ];
+  const grid = document.getElementById('kpiGrid');
+  if(!grid) return;
+  grid.innerHTML = cards.map((c, i) => `
+    <div class="kpi-card">
+      <div class="kpi-card-top">
+        <div class="kpi-card-label">${c.label}</div>
+        ${c.icon}
+      </div>
+      <div class="kpi-card-value" id="kpiVal${i}" style="${c.color ? 'color:' + c.color + ';' : ''}">0</div>
+      <div class="kpi-card-sub">${c.sub}</div>
+    </div>
+  `).join('');
+  cards.forEach((c, i) => {
+    const el = document.getElementById('kpiVal' + i);
+    if(el) {
+      animateCount(el, c.value, c.decimals ?? 0);
+      if (c.suffix) {
+        setTimeout(() => { el.textContent = el.textContent + c.suffix; }, REDUCE_MOTION ? 0 : 700);
+      }
+    }
+  });
+}
+
+function ringSvg(score, size = 96, stroke = 8) {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const color = tierColor(score);
+  return `
+    <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+      <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="rgba(15,23,42,0.05)" stroke-width="${stroke}"/>
+      <circle class="ring-progress" cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}"
+        stroke-dasharray="${c}" stroke-dashoffset="${c}" data-final-offset="${c * (1 - score)}"
+        stroke-linecap="round" transform="rotate(-90 ${size/2} ${size/2})"/>
+    </svg>
+  `;
+}
+
+function renderQualityScores(stats) {
+  const dims = [
+    { label: 'Relevance', score: stats.average_relevance },
+    { label: 'Accuracy', score: stats.average_accuracy },
+    { label: 'Hallucination', score: stats.average_hallucination },
+    { label: 'Completeness', score: stats.average_completeness },
+    { label: 'Overall', score: stats.average_overall },
+  ];
+  const grid = document.getElementById('qualityGrid');
+  if(!grid) return;
+  grid.innerHTML = dims.map(d => `
+    <div class="quality-card">
+      <div class="quality-ring-wrap">
+        ${ringSvg(d.score)}
+        <div class="quality-ring-num">${d.score.toFixed(2)}</div>
+      </div>
+      <div style="font-size: 13.5px; font-weight: 700; margin-bottom: 6px; color: var(--paper);">${d.label}</div>
+      <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: ${tierColor(d.score)};">${tierLabel(d.score)}</div>
+    </div>
+  `).join('');
+  animateRings(grid);
+}
+
+function renderVerdictDonut(stats) {
+  const segments = [
+    { key: 'PASS', label: 'Pass', count: stats.pass_count, color: 'var(--verified)' },
+    { key: 'PARTIAL', label: 'Needs Improvement', count: stats.needs_improvement_count, color: 'var(--partial)' },
+    { key: 'FAIL', label: 'Fail', count: stats.fail_count, color: 'var(--flagged)' },
+  ];
+  const total = stats.total_records || 1;
+  const r = 58, c = 2 * Math.PI * r;
+  let offset = 0;
+  const circles = segments.map(s => {
+    const frac = s.count / total;
+    const dash = frac * c;
+    const circle = `<circle class="donut-arc" data-key="${s.key}" cx="80" cy="80" r="${r}" fill="none" stroke="${s.color}" stroke-width="20"
+      stroke-dasharray="${dash} ${c - dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 80 80)"/>`;
+    offset += dash;
+    return circle;
+  }).join('');
+
+  const row = document.getElementById('verdictDonutRow');
+  if(!row) return;
+  row.innerHTML = `
+    <svg viewBox="0 0 160 160" width="160" height="160">
+      <circle cx="80" cy="80" r="${r}" fill="none" stroke="rgba(15,23,42,0.05)" stroke-width="20"/>
+      ${circles}
+      <text x="80" y="74" text-anchor="middle" font-size="24" font-weight="700" fill="var(--paper)" font-family="IBM Plex Mono, monospace">${stats.total_records}</text>
+      <text x="80" y="94" text-anchor="middle" font-size="11.5" fill="var(--muted)" font-weight="600">responses</text>
+    </svg>
+    <div class="donut-legend">
+      ${segments.map(s => `
+        <div class="donut-legend-item" data-key="${s.key}">
+          <span style="width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; background:${s.color};"></span>
+          <span style="color: var(--paper);">${s.label}</span>
+          <span style="font-family: 'IBM Plex Mono', monospace; color: var(--muted); margin-left: auto; padding-left: 16px;">${s.count} (${total ? Math.round(100 * s.count / total) : 0}%)</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  const legendItems = row.querySelectorAll('.donut-legend-item');
+  const arcs = row.querySelectorAll('.donut-arc');
+  legendItems.forEach(item => {
+    const key = item.getAttribute('data-key');
+    item.addEventListener('mouseenter', () => {
+      legendItems.forEach(li => li.classList.toggle('dim', li !== item));
+      arcs.forEach(a => {
+        const match = a.getAttribute('data-key') === key;
+        a.classList.toggle('hi', match);
+        a.classList.toggle('dim', !match);
+      });
+    });
+    item.addEventListener('mouseleave', () => {
+      legendItems.forEach(li => li.classList.remove('dim', 'hi'));
+      arcs.forEach(a => a.classList.remove('hi', 'dim'));
+    });
+  });
+}
+
+function renderScoreDistribution(stats) {
+  const dist = stats.score_distribution || {};
+  const max = Math.max(1, ...Object.values(dist));
+  const colors = { '0.0-0.2': 'var(--flagged)', '0.2-0.4': 'var(--flagged)', '0.4-0.6': 'var(--partial)', '0.6-0.8': 'var(--partial)', '0.8-1.0': 'var(--verified)' };
+  const container = document.getElementById('scoreDistribution');
+  if(!container) return;
+  container.innerHTML = Object.entries(dist).map(([range, count]) => `
+    <div class="dist-row">
+      <div class="dist-label">${range}</div>
+      <div class="dist-bar-track"><div class="dist-bar-fill" data-final-width="${(count/max)*100}%" style="background:${colors[range] || 'var(--muted)'};"></div></div>
+      <div style="width: 32px; text-align: right; color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 13.5px;">${count}</div>
+    </div>
+  `).join('');
+  animateBars(container, '.dist-bar-fill');
+}
+
+function renderHallucinationSection(stats) {
+  const sec = document.getElementById('hallucSection');
+  if(!sec) return;
+  sec.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--line);font-size:14.5px;color:var(--paper);font-weight:500;">
+      <span>Responses with hallucinated claims</span><span style="font-family:'IBM Plex Mono', monospace;font-weight:700;color:var(--flagged);">${stats.hallucination_count}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--line);font-size:14.5px;color:var(--paper);font-weight:500;">
+      <span>Hallucination frequency</span><span style="font-family:'IBM Plex Mono', monospace;font-weight:700;color:var(--flagged);">${(stats.hallucination_frequency * 100).toFixed(1)}%</span>
+    </div>
+    <div style="font-size:13px;color:var(--muted);margin-top:16px;line-height:1.6;font-weight:500;">Measures responses containing unsupported or contradictory claims based on retrieved evidence.</div>
+  `;
+}
+
+function renderCompletenessSection(stats) {
+  const sec = document.getElementById('completenessSection');
+  if(!sec) return;
+  sec.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--line);font-size:14.5px;color:var(--paper);font-weight:500;">
+      <span>Responses with missing aspects</span><span style="font-family:'IBM Plex Mono', monospace;font-weight:700;color:var(--partial);">${stats.records_with_missing_aspects}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--line);font-size:14.5px;color:var(--paper);font-weight:500;">
+      <span>Incomplete-response frequency</span><span style="font-family:'IBM Plex Mono', monospace;font-weight:700;color:var(--partial);">${(stats.missing_aspects_frequency * 100).toFixed(1)}%</span>
+    </div>
+    <div style="font-size:13px;color:var(--muted);margin-top:16px;line-height:1.6;font-weight:500;">Reflects the share of responses where the Completeness Judge identified at least one unaddressed aspect of the question. Specific missing-aspect text is available per-record via drill-down.</div>
+  `;
+}
+
+function renderTopIssues(stats) {
+  const issues = stats.top_issues || [];
+  const panel = document.getElementById('topIssuesPanel');
+  if(!panel) return;
+  if (issues.length === 0) {
+    panel.innerHTML = `<div style="padding:16px 0;color:var(--muted);font-weight:500;text-align:center;">No recurring issues detected in the current data.</div>`;
+    return;
+  }
+  const max = Math.max(...issues.map(i => i.count));
+  panel.innerHTML = issues.map(i => `
+    <div style="display:flex;align-items:center;gap:16px;padding:12px 0;border-bottom:1px solid var(--line);font-size:14.5px;color:var(--paper);font-weight:500;">
+      ${ICONS.warn.replace('style="width:18px;height:18px;"', 'style="width:18px;height:18px;color:var(--flagged);flex-shrink:0;"')}
+      <span style="min-width:180px;">${escapeHtml(i.issue)}</span>
+      <div style="flex:1;height:10px;background:rgba(15,23,42,0.05);border-radius:5px;overflow:hidden;border:1px solid rgba(255,255,255,0.5);">
+        <div class="issue-bar-fill" data-final-width="${(i.count/max)*100}%" style="height:100%;background:linear-gradient(90deg,var(--flagged),var(--partial));border-radius:5px;width:0;transition:width 0.9s cubic-bezier(.2,.8,.2,1);"></div>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;color:var(--muted);width:32px;text-align:right;font-weight:600;">${i.count}</span>
+    </div>
+  `).join('');
+  animateBars(panel, '.issue-bar-fill');
+}
+
+function populateBatchFilterOptions(batches) {
+  const select = document.getElementById('filterBatch');
+  if(!select) return;
+  const current = select.value;
+  select.innerHTML = '<option value="">All batches</option>' + batches.map(b =>
+    `<option value="${b.batch_id}">${b.batch_id.slice(0, 8)}… (${b.record_count} records)</option>`
+  ).join('');
+  select.value = current;
+}
+
+async function renderBatchHistory(batches) {
+  const body = document.getElementById('batchHistoryBody');
+  const emptyEl = document.getElementById('batchHistoryEmpty');
+  const table = document.getElementById('batchHistoryTable');
+  if(!body || !emptyEl || !table) return;
+
+  if (batches.length === 0) {
+    table.style.display = 'none';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  table.style.display = 'table';
+  emptyEl.style.display = 'none';
+
+  const rows = await Promise.all(batches.map(async b => {
+    try {
+      const s = await fetchJson(`${API_BASE}/dashboard/stats?${buildQuery({ batch_id: b.batch_id })}`);
+      return { batch: b, stats: s };
+    } catch (e) {
+      return { batch: b, stats: null };
+    }
+  }));
+
+  body.innerHTML = rows.map(({ batch, stats }) => `
+    <tr>
+      <td><span class="batch-id-chip">${batch.batch_id.slice(0, 8)}…</span></td>
+      <td style="color:var(--muted); font-size:12px;">${fmtDate(batch.started_at)}</td>
+      <td style="font-family:'IBM Plex Mono', monospace; font-weight:600;">${batch.record_count}</td>
+      ${stats ? `
+        <td><span class="score-pill" style="color:var(--verified); border-color:rgba(16,185,129,0.3);">${stats.pass_count}</span></td>
+        <td><span class="score-pill" style="color:var(--partial); border-color:rgba(245,158,11,0.3);">${stats.needs_improvement_count}</span></td>
+        <td><span class="score-pill" style="color:var(--flagged); border-color:rgba(239,68,68,0.3);">${stats.fail_count}</span></td>
+        <td><span class="score-pill" style="color:${tierColor(stats.average_overall)}; border-color:${tierColor(stats.average_overall)};">${stats.average_overall.toFixed(2)}</span></td>
+        <td>${badgeHtml('complete')}</td>
+      ` : `<td colspan="4">Stats unavailable</td><td>${badgeHtml('incomplete')}</td>`}
+      <td style="white-space:nowrap;"><button class="table-view-btn" onclick="filterToBatch('${batch.batch_id}')">View</button> <button class="table-view-btn" onclick="exportBatchReport('${batch.batch_id}', this)">Export PDF</button></td>
+    </tr>
+  `).join('');
+}
+
+function filterToBatch(batchId) {
+  dashCurrentFilters.batch_id = batchId;
+  const filterEl = document.getElementById('filterBatch');
+  if(filterEl) filterEl.value = batchId;
+  dashRecordsOffset = 0;
+  renderRecordsTable();
+  document.getElementById('recordsTable').scrollIntoView({ behavior: REDUCE_MOTION ? 'auto' : 'smooth' });
+}
+
+async function renderRecordsTable() {
+  const body = document.getElementById('recordsTableBody');
+  const emptyEl = document.getElementById('recordsEmpty');
+  const table = document.getElementById('recordsTable');
+  if(!body || !emptyEl || !table) return;
+
+  try {
+    const query = buildQuery({ ...dashCurrentFilters, limit: DASH_PAGE_SIZE, offset: dashRecordsOffset });
+    const data = await fetchJson(`${API_BASE}/dashboard/records?${query}`);
+    const records = data.records || [];
+
+    if (records.length === 0) {
+      table.style.display = 'none';
+      emptyEl.style.display = 'block';
+    } else {
+      table.style.display = 'table';
+      emptyEl.style.display = 'none';
+      body.innerHTML = records.map(r => `
+        <tr>
+          <td class="q-cell" title="${escapeHtml(r.question)}">${escapeHtml(r.question)}</td>
+          <td>${verdictBadgeHtml(r.verdict)}</td>
+          <td><span class="score-pill" style="color:${tierColor(r.overall_score)};border-color:${tierColor(r.overall_score)};">${r.overall_score.toFixed(2)}</span></td>
+          <td><span class="score-pill" style="color:${scoreColor(r.relevance_score)};">${r.relevance_score.toFixed(2)}</span></td>
+          <td><span class="score-pill" style="color:${scoreColor(r.accuracy_score)};">${r.accuracy_score.toFixed(2)}</span></td>
+          <td><span class="score-pill" style="color:${scoreColor(r.hallucination_score)};">${r.hallucination_score.toFixed(2)}</span> <span style="color:var(--muted);font-size:11px;font-weight:700;">(${r.hallucination_status})</span></td>
+          <td><span class="score-pill" style="color:${scoreColor(r.completeness_score)};">${r.completeness_score.toFixed(2)}</span></td>
+          <td>${r.batch_id ? `<span class="batch-id-chip">${r.batch_id.slice(0, 8)}…</span>` : '—'}</td>
+          <td style="font-size:12px;color:var(--muted);">${fmtDate(r.created_at)}</td>
+          <td><button class="table-view-btn" onclick="viewDashboardRecord('${r.id}', this)">View</button></td>
+        </tr>
+      `).join('');
+    }
+
+    renderPagination(records.length);
+  } catch (e) {
+    body.innerHTML = '';
+    table.style.display = 'none';
+    emptyEl.textContent = 'Could not load records: ' + e.message;
+    emptyEl.style.display = 'block';
+  }
+}
+
+function renderPagination(currentPageCount) {
+  const el = document.getElementById('recordsPagination');
+  if(!el) return;
+  const page = Math.floor(dashRecordsOffset / DASH_PAGE_SIZE) + 1;
+  el.innerHTML = `
+    <button class="nav-btn ghost" style="width:auto;" ${dashRecordsOffset === 0 ? 'disabled' : ''} onclick="changePage(-1)">Previous</button>
+    <span>Page ${page}</span>
+    <button class="nav-btn ghost" style="width:auto;" ${currentPageCount < DASH_PAGE_SIZE ? 'disabled' : ''} onclick="changePage(1)">Next</button>
+  `;
+}
+
+function changePage(delta) {
+  dashRecordsOffset = Math.max(0, dashRecordsOffset + delta * DASH_PAGE_SIZE);
+  renderRecordsTable();
+}
+
+async function viewDashboardRecord(id, btn) {
+  const originalText = btn ? btn.textContent : null;
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    const fullResult = await fetchJson(`${API_BASE}/dashboard/records/${id}`);
+    viewFullResult(fullResult);
+  } catch (e) {
+    alert('Could not load this record: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = originalText; }
+  }
+}
+
+function applyFilters() {
+  dashCurrentFilters = {
+    verdict: document.getElementById('filterVerdict').value,
+    batch_id: document.getElementById('filterBatch').value,
+    min_score: document.getElementById('filterMinScore').value,
+    max_score: document.getElementById('filterMaxScore').value,
+  };
+  dashRecordsOffset = 0;
+  loadDashboard();
+}
+
+function resetFilters() {
+  document.getElementById('filterVerdict').value = '';
+  document.getElementById('filterBatch').value = '';
+  document.getElementById('filterMinScore').value = '';
+  document.getElementById('filterMaxScore').value = '';
+  dashCurrentFilters = { verdict: '', batch_id: '', min_score: '', max_score: '' };
+  dashRecordsOffset = 0;
+  loadDashboard();
+}
+
+initDropzone();
+
+// Initialize application on default tab
+window.addEventListener('DOMContentLoaded', () => {
+  switchView('dashboard');
+});
 </script>
 
 </body>

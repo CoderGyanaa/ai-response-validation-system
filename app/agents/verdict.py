@@ -34,9 +34,14 @@ class VerdictAgent:
             + completeness.score * self.WEIGHTS["completeness"]
         )
 
-        if overall >= 0.8:
+        # Threshold comparisons use a rounded value: summing floats can land
+        # a exact-boundary input (e.g. all four dimensions at 0.8) on
+        # 0.7999999999999999 rather than 0.8, misclassifying PASS as PARTIAL.
+        # The reported score itself is unaffected — only the classification.
+        overall_for_threshold = round(overall, 6)
+        if overall_for_threshold >= 0.8:
             verdict = "PASS"
-        elif overall >= 0.5:
+        elif overall_for_threshold >= 0.5:
             verdict = "PARTIAL"
         else:
             verdict = "FAIL"

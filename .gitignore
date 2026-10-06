@@ -12,6 +12,7 @@ venv/
 data/chroma_store/
 data/raw/
 data/processed/
+data/*.db
 
 # OS / IDE
 .DS_Store

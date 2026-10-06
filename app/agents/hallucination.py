@@ -61,7 +61,7 @@ class HallucinationDetectionAgent(BaseJudgeAgent):
             status = parsed.get("hallucination_status", "")
             if status not in VALID_STATUSES:
                 logger.warning("Hallucination agent returned unexpected status: %r", status)
-                status = "partial" if parsed.get("claims") else "none"
+                status = ""  # resolved below, once we know the actual (filtered) claim count
 
             raw_claims = parsed.get("claims", [])
             claim_evidence = [
@@ -75,6 +75,16 @@ class HallucinationDetectionAgent(BaseJudgeAgent):
                 if isinstance(c, dict) and c.get("claim")
             ]
             unsupported_claims = [c.claim for c in claim_evidence]
+
+            # The judge's status field and its own claims list must agree —
+            # a contradictory pair (e.g. status "none" alongside a flagged
+            # claim) is treated as unreliable and resolved from the claims,
+            # which are the more concrete of the two signals.
+            has_claims = len(claim_evidence) > 0
+            if status == "" or (has_claims and status == "none") or (not has_claims and status in ("partial", "full")):
+                if status:
+                    logger.warning("Hallucination status %r is inconsistent with %d flagged claim(s); resolving from claims.", status, len(claim_evidence))
+                status = "partial" if has_claims else "none"
 
             return HallucinationResult(
                 agent_name=self.name,
