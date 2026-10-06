@@ -1,12 +1,125 @@
-# AI Response Validation System — Hallucination Detection Assistance
+<div align="center">
 
-**Infosys Springboard Internship Project — Milestone 4**
+# ⚡ AI Response Validation System
+
+### RAG-Powered • Multi-Agent • Evidence-Grounded • Explainable AI Evaluation
+
+<p>
+  <img src="https://img.shields.io/badge/STATUS-MILESTONE%204%20COMPLETE-00D4FF?style=for-the-badge&labelColor=0B1020" alt="Milestone 4 Complete">
+  <img src="https://img.shields.io/badge/TESTS-140%20PASSED-22C55E?style=for-the-badge&labelColor=0B1020" alt="140 Tests Passed">
+  <img src="https://img.shields.io/badge/PYTHON-3.11-3776AB?style=for-the-badge&labelColor=0B1020" alt="Python 3.11">
+  <img src="https://img.shields.io/badge/FASTAPI-API-009688?style=for-the-badge&labelColor=0B1020" alt="FastAPI">
+</p>
+
+**Don't just generate AI responses. Validate them.**
+
+A complete evaluation platform that analyzes AI responses for  
+**relevance · accuracy · hallucination · completeness · overall quality**
+
+using **RAG retrieval + specialized judge agents + weighted verdicts + analytics + PDF reporting**.
+
+</div>
+
+---
+
+## 🧠 At a Glance
+
+```text
+                 AI RESPONSE
+                      │
+                      ▼
+             ┌─────────────────┐
+             │   FastAPI API   │
+             └────────┬────────┘
+                      ▼
+             ┌─────────────────┐
+             │  RAG Retrieval  │──────► ChromaDB
+             │   + Evidence    │
+             └────────┬────────┘
+                      ▼
+       ┌─────────────────────────────────┐
+       │       MULTI-AGENT JUDGES        │
+       │                                 │
+       │ Relevance  Accuracy             │
+       │ Hallucination  Completeness     │
+       └───────────────┬─────────────────┘
+                       ▼
+                ┌──────────────┐
+                │ Verdict Agent│
+                │ Weighted Score│
+                └──────┬───────┘
+                       │
+             ┌─────────┴─────────┐
+             ▼                   ▼
+        📊 Dashboard          📄 PDF Report
+```
+
+> **Core idea:** turn an AI answer into an **evidence-backed, explainable quality assessment** rather than a simple "looks right" judgment.
+
+---
 
 ## Problem Statement
 LLM-generated responses can sound confident while containing unsupported or fabricated claims. There's no standard, automated way to check a response's relevance, factual accuracy, faithfulness to source evidence, and completeness.
 
 ## Objective
 Build a RAG-based, multi-agent evaluation system that scores AI responses against retrieved reference evidence and flags likely hallucinations.
+
+---
+
+## ✨ Why This Project Is Different
+
+| Capability | Result |
+|---|---|
+| 🎯 **Relevance Judge** | Knows whether the response actually addresses the question |
+| 🧠 **Accuracy Judge** | Checks factual claims against references or retrieved evidence |
+| 🛡️ **Hallucination Agent** | Performs claim-level unsupported/contradictory claim analysis |
+| 🧩 **Completeness Judge** | Identifies addressed and missing requirements |
+| ⚖️ **Verdict Agent** | Converts multiple dimensions into Pass / Needs Improvement / Fail |
+| 🔎 **RAG Evidence** | Grounds evaluation in a persistent local knowledge base |
+| 📦 **Batch Evaluation** | Evaluates CSV datasets without letting bad rows stop valid rows |
+| 📊 **Scoring Dashboard** | KPIs, distributions, filters, batch history and drill-down |
+| 📄 **PDF Reports** | Produces structured evidence-rich evaluation reports |
+| 💾 **Persistence** | Stores structured results in SQLite |
+| 🧪 **Validation** | 142 collected tests → 140 passed + 2 documented XFAIL |
+
+---
+
+## 🧬 Evaluation Model
+
+```text
+                    QUESTION
+                       │
+                       ▼
+                AI RESPONSE
+                       │
+        ┌──────────────┴──────────────┐
+        │                             │
+        ▼                             ▼
+ Reference Answer              RAG Retrieval
+        │                             │
+        └──────────────┬──────────────┘
+                       ▼
+              ┌─────────────────┐
+              │ Evidence Context│
+              └────────┬────────┘
+                       ▼
+       ┌─────────────────────────────────┐
+       │          JUDGE LAYER            │
+       │                                 │
+       │  Relevance ──────────────┐      │
+       │  Accuracy ───────────────┤      │
+       │  Hallucination ──────────┤      │
+       │  Completeness ───────────┘      │
+       └──────────────────┬──────────────┘
+                          ▼
+                  WEIGHTED VERDICT
+                          │
+             ┌────────────┼────────────┐
+             ▼            ▼            ▼
+           PASS     NEEDS IMPROVEMENT  FAIL
+```
+
+
 
 ## Current Status
 
@@ -19,7 +132,7 @@ Build a RAG-based, multi-agent evaluation system that scores AI responses agains
 | Automated tests | **142 collected, 140 passed, 2 documented xfail, 0 unexpected failures** |
 | M2 validation suite | **22/22 expected outcomes matched** |
 | M4.3 end-to-end suite | **87 tests — real orchestrator/agents/store/API/dashboard/PDF pipeline** |
-| Two-AI-system demo | **Datasets and steps prepared, not yet executed — see `docs/evaluation/final_demo_plan.md`** |
+| Two-AI-system demo | **COMPLETE — System A: 10 records; System B: 5 records** |
 
 ## Milestones & Progress
 
@@ -69,7 +182,7 @@ Full details in [`docs/evaluation/milestone4.md`](docs/evaluation/milestone4.md)
 
 **M4.3 End-to-End Testing & System Validation** — An 87-test end-to-end suite ([`tests/test_e2e.py`](tests/test_e2e.py)) runs the real orchestrator, all four agents, the Verdict Agent, the results store, the API, the dashboard endpoints, and the PDF generator together, across 12 representative scenarios and a full batch workflow. Dashboard statistics are checked against both hand-calculated expectations and independent raw SQL queries; PDF content is checked against the live dashboard API for the same batch. This testing pass found and fixed three real defects (a floating-point verdict-threshold boundary issue, a completeness category/score mismatch, and a hallucination status/claims consistency issue), plus caught and fixed a serious regression where the Retriever had reverted to a non-functional placeholder that never queried the vector store at all.
 
-**M4.4 Technical Documentation, Project Report & Final Demonstration** — Complete technical documentation covering every component, a final project report, and a two-AI-system demo plan with prepared, verified-parseable datasets ([`docs/evaluation/demo_datasets/`](docs/evaluation/demo_datasets/)) — the live demo run itself is prepared but not yet executed; see the final project report for details.
+**M4.4 Technical Documentation, Project Report & Final Demonstration** — Complete technical documentation, final project report, and live two-AI-system demonstration using prepared datasets. System A was evaluated on 10 records and System B on 5 records; the real comparison is documented in [`docs/evaluation/final_demo_plan.md`](docs/evaluation/final_demo_plan.md).
 
 **Testing:** 142 automated tests collected (140 passing, 2 documented and intentionally `xfail`ed known limitations).
 
@@ -147,6 +260,27 @@ curl -X POST [http://127.0.0.1:8000/evaluate](http://127.0.0.1:8000/evaluate) \
     "reference_answer": "The capital of France is Paris.",
     "source_document": "France is a country in Europe. Its capital city is Paris."
   }'
+
+## 🏁 Final Two-AI-System Demonstration
+
+The completed live demonstration evaluated two distinct AI response datasets through the platform.
+
+| Metric | AI System A | AI System B |
+|---|---:|---:|
+| Records evaluated | **10** | **5** |
+| Pass | **9 (90%)** | **0 (0%)** |
+| Needs Improvement | **0 (0%)** | **1 (20%)** |
+| Fail | **1 (10%)** | **4 (80%)** |
+| Average Relevance | **1.00** | **0.82** |
+| Average Accuracy | **0.90** | **0.12** |
+| Average Hallucination Score | **0.90** | **0.20** |
+| Hallucination Frequency | **10%** | **100%** |
+| Average Completeness | **0.90** | **0.60** |
+| Average Overall Score | **0.93** | **0.33** |
+
+> **Demo finding:** On these demonstration datasets, System A achieved substantially stronger response-quality scores than System B. This is an evaluation snapshot, not a statistically equivalent benchmark, because the two datasets contain different numbers of records.
+
+---
 
 ## Dataset Sources
 See [`data/README.md`](data/README.md) — datasets are not committed, only reproduced via `scripts/ingest_knowledge_base.py`. Currently ingests 817 TruthfulQA records + 2,000 SQuAD records (~5,562 chunks) into the local vector store.
@@ -244,7 +378,7 @@ python scripts/run_consistency_check.py
 - A whitespace-only question passes schema validation (documented defect D-5, low severity)
 
 ## Future Improvements
-- Run and record the two-AI-system demonstration comparison (datasets and steps already prepared — see [`docs/evaluation/final_demo_plan.md`](docs/evaluation/final_demo_plan.md))
+- Extend the completed two-AI-system demonstration to larger datasets and additional AI systems
 - Human-evaluation comparison at larger scale for judge reliability
 - Caching layer for repeated evaluations
 - Parallelize per-row judge calls to reduce batch latency
