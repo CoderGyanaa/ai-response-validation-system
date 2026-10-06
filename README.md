@@ -238,9 +238,9 @@ Each judge agent prompts the LLM for a structured JSON verdict, parses it robust
 
 ## 🎬 Demo
 
-<img width="1917" height="777" alt="image" src="https://github.com/user-attachments/assets/40363f17-e284-4892-bb25-038380119af5" />
-<img width="1916" height="627" alt="image" src="https://github.com/user-attachments/assets/c4867d3f-98d6-4ec6-9a08-bf5f8188b9ee" />
-
+<img width="1555" height="902" alt="image" src="https://github.com/user-attachments/assets/63add739-5b3f-4cc3-9549-c49c07ec0f82" />
+<img width="1548" height="833" alt="image" src="https://github.com/user-attachments/assets/3285786e-1542-46f6-9d9c-e058b681bb2d" />
+<img width="1546" height="902" alt="image" src="https://github.com/user-attachments/assets/93d261d0-c7ad-4fa2-bacf-4a5f3de31311" />
 
 ### Interactive API Docs
 Once the server is running, explore and test the endpoints live via Swagger UI:
